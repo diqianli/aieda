@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARM CPU Emulator Visualization</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ARM CPU Emulator Visualization</h1>
+            <div class="controls">
+                <button id="playBtn" class="btn btn-primary" title="Play">&#9658;</button>
+                <button id="pauseBtn" class="btn btn-secondary" title="Pause">&#10074;&#10074;</button>
+                <button id="stepBtn" class="btn btn-secondary" title="Step">&#10074;&#124;</button>
+                <button id="resetBtn" class="btn btn-warning" title="Reset">&#8634;</button>
+                <div class="speed-control">
+                    <label for="speedSlider">Speed:</label>
+                    <input type="range" id="speedSlider" min="1" max="100" value="10">
+                    <span id="speedValue">10</span> cycles/s
+                </div>
+            </div>
+        </header>
+
+        <div class="metrics-bar">
+            <div class="metric">
+                <span class="metric-label">Cycle:</span>
+                <span id="cycleValue" class="metric-value">0</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Committed:</span>
+                <span id="committedValue" class="metric-value">0</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">IPC:</span>
+                <span id="ipcValue" class="metric-value">0.00</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">L1 Hit:</span>
+                <span id="l1HitValue" class="metric-value">0%</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">L2 Hit:</span>
+                <span id="l2HitValue" class="metric-value">0%</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Window:</span>
+                <span id="windowValue" class="metric-value">0/256</span>
+            </div>
+        </div>
+
+        <!-- Tab navigation -->
+        <div class="tab-navigation">
+            <button class="tab-btn active" data-tab="pipeline">Pipeline Overview</button>
+            <button class="tab-btn" data-tab="konata">Konata View</button>
+        </div>
+
+        <div class="main-content">
+            <!-- Pipeline Overview Tab -->
+            <section class="pipeline-section tab-content active" id="tab-pipeline">
+                <h2>Pipeline</h2>
+                <div class="pipeline">
+                    <div class="pipeline-stage" id="stage-fetch">
+                        <div class="stage-name">Fetch</div>
+                        <div class="stage-count">0</div>
+                    </div>
+                    <div class="pipeline-arrow">&#8594;</div>
+                    <div class="pipeline-stage" id="stage-dispatch">
+                        <div class="stage-name">Dispatch</div>
+                        <div class="stage-count">0</div>
+                    </div>
+                    <div class="pipeline-arrow">&#8594;</div>
+                    <div class="pipeline-stage" id="stage-execute">
+                        <div class="stage-name">Execute</div>
+                        <div class="stage-count">0</div>
+                    </div>
+                    <div class="pipeline-arrow">&#8594;</div>
+                    <div class="pipeline-stage" id="stage-memory">
+                        <div class="stage-name">Memory</div>
+                        <div class="stage-count">0</div>
+                    </div>
+                    <div class="pipeline-arrow">&#8594;</div>
+                    <div class="pipeline-stage" id="stage-commit">
+                        <div class="stage-name">Commit</div>
+                        <div class="stage-count">0</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Konata Pipeline View Tab -->
+            <section class="konata-section tab-content" id="tab-konata">
+                <h2>Konata Pipeline Visualization</h2>
+                <div id="pipelineViewContainer" class="pipeline-view-container"></div>
+            </section>
+
+            <section class="instruction-window-section">
+                <h2>Instruction Window</h2>
+                <div class="window-container">
+                    <table class="instruction-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>PC</th>
+                                <th>Opcode</th>
+                                <th>Status</th>
+                                <th>Src Regs</th>
+                                <th>Dst Regs</th>
+                                <th>Memory</th>
+                                <th>Deps</th>
+                            </tr>
+                        </thead>
+                        <tbody id="instructionBody">
+                            <!-- Instructions will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <div class="bottom-section">
+                <section class="dependency-section">
+                    <h2>Dependency Graph</h2>
+                    <div class="graph-container">
+                        <svg id="dependencyGraph" width="100%" height="300">
+                            <!-- Dependency graph will be rendered here -->
+                        </svg>
+                    </div>
+                </section>
+
+                <section class="charts-section">
+                    <h2>Performance Charts</h2>
+                    <div class="chart-container">
+                        <h3>IPC Over Time</h3>
+                        <canvas id="ipcChart" width="400" height="200"></canvas>
+                    </div>
+                    <div class="cache-stats">
+                        <h3>Cache Statistics</h3>
+                        <div class="cache-bar">
+                            <div class="cache-label">L1 Hits</div>
+                            <div class="bar-container">
+                                <div id="l1Bar" class="bar bar-hit" style="width: 0%"></div>
+                            </div>
+                            <div id="l1Percent" class="bar-value">0%</div>
+                        </div>
+                        <div class="cache-bar">
+                            <div class="cache-label">L2 Hits</div>
+                            <div class="bar-container">
+                                <div id="l2Bar" class="bar bar-l2" style="width: 0%"></div>
+                            </div>
+                            <div id="l2Percent" class="bar-value">0%</div>
+                        </div>
+                        <div class="cache-bar">
+                            <div class="cache-label">Misses</div>
+                            <div class="bar-container">
+                                <div id="missBar" class="bar bar-miss" style="width: 0%"></div>
+                            </div>
+                            <div id="missPercent" class="bar-value">0%</div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <div id="connectionStatus" class="status-bar">
+            Connecting to server...
+        </div>
+    </div>
+
+    <!-- Load Konata dependencies -->
+    <script src="/konata/op.js?v=3"></script>
+    <script src="/konata/stage.js?v=3"></script>
+    <script src="/konata/konata_renderer.js?v=3"></script>
+    <script src="/pipeline_view.js?v=3"></script>
+    <script src="/app.js?v=3"></script>
+</body>
+</html>

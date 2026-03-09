@@ -1,0 +1,37 @@
+[package]
+name = "arm_cpu_emulator"
+version = "0.1.0"
+edition = "2021"
+description = "ARMv8-A CPU Emulator for SOC ESL Simulation"
+license = "MIT"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+schemars = "0.8"
+thiserror = "1.0"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+rayon = { version = "1.10", optional = true }
+ahash = "0.8"
+smallvec = { version = "1.13", features = ["serde"] }
+xz2 = "0.1"
+
+# Visualization dependencies (optional)
+axum = { version = "0.7", features = ["ws"], optional = true }
+tokio = { version = "1", features = ["full"], optional = true }
+tower-http = { version = "0.5", features = ["fs", "cors"], optional = true }
+futures-util = { version = "0.3", optional = true }
+
+[features]
+default = []
+parallel = ["rayon"]
+visualization = ["axum", "tokio", "tower-http", "futures-util"]
+
+[dev-dependencies]
+criterion = "0.5"
+tempfile = "3.10"
+
+[profile.release]
+opt-level = 3
+lto = true

@@ -1,0 +1,205 @@
+/**
+ * Konata Operation (Instruction) Data Structure
+ *
+ * Represents a single instruction in the pipeline visualization.
+ */
+
+/**
+ * Stage colors in HSL format
+ */
+const STAGE_COLORS = {
+    'F':  { h: 200, s: 70, l: 60, name: 'Fetch' },
+    'Dc': { h: 180, s: 60, l: 55, name: 'Decode' },
+    'Rn': { h: 160, s: 50, l: 50, name: 'Rename' },
+    'Ds': { h: 140, s: 60, l: 55, name: 'Dispatch' },
+    'Is': { h: 120, s: 70, l: 50, name: 'Issue' },
+    'Ex': { h: 60,  s: 80, l: 55, name: 'Execute' },
+    'Me': { h: 30,  s: 80, l: 55, name: 'Memory' },
+    'Cm': { h: 280, s: 60, l: 55, name: 'Complete' },
+    'Rt': { h: 320, s: 50, l: 50, name: 'Retire' }
+};
+
+/**
+ * Dependency colors
+ */
+const DEP_COLORS = {
+    'register': '#ff6600',  // Orange for register dependencies
+    'memory': '#0066ff'     // Blue for memory dependencies
+};
+
+/**
+ * Represents a single pipeline stage
+ */
+class Stage {
+    constructor(name, startCycle, endCycle) {
+        this.name = name;
+        this.startCycle = startCycle;
+        this.endCycle = endCycle;
+        this.color = STAGE_COLORS[name] || { h: 0, s: 0, l: 50, name: name };
+    }
+
+    get duration() {
+        return this.endCycle - this.startCycle;
+    }
+
+    get cssColor() {
+        return `hsl(${this.color.h}, ${this.color.s}%, ${this.color.l}%)`;
+    }
+
+    cssColorTransparent(alpha = 0.3) {
+        return `hsla(${this.color.h}, ${this.color.s}%, ${this.color.l}%, ${alpha})`;
+    }
+}
+
+/**
+ * Represents a dependency on another instruction
+ */
+class DependencyRef {
+    constructor(producerId, depType) {
+        this.producerId = producerId;
+        this.depType = depType;
+        this.color = DEP_COLORS[depType] || '#888888';
+    }
+}
+
+/**
+ * Represents a lane (execution unit) for an instruction
+ */
+class Lane {
+    constructor(name) {
+        this.name = name;
+        this.stages = [];
+    }
+
+    addStage(stage) {
+        this.stages.push(stage);
+    }
+
+    get earliestCycle() {
+        if (this.stages.length === 0) return Infinity;
+        return Math.min(...this.stages.map(s => s.startCycle));
+    }
+
+    get latestCycle() {
+        if (this.stages.length === 0) return 0;
+        return Math.max(...this.stages.map(s => s.endCycle));
+    }
+}
+
+/**
+ * Represents a complete instruction/operation in the pipeline
+ */
+class Op {
+    constructor(data) {
+        this.id = data.id;
+        this.gid = data.gid;
+        this.rid = data.rid;
+        this.fetchedCycle = data.fetched_cycle;
+        this.retiredCycle = data.retired_cycle;
+        this.labelName = data.label_name;
+        this.pc = data.pc;
+        this.srcRegs = data.src_regs || [];
+        this.dstRegs = data.dst_regs || [];
+        this.isMemory = data.is_memory;
+        this.memAddr = data.mem_addr;
+
+        // Parse lanes
+        this.lanes = new Map();
+        if (data.lanes) {
+            for (const [laneName, laneData] of Object.entries(data.lanes)) {
+                const lane = new Lane(laneName);
+                if (laneData.stages) {
+                    for (const stageData of laneData.stages) {
+                        lane.addStage(new Stage(
+                            stageData.name,
+                            stageData.start_cycle,
+                            stageData.end_cycle
+                        ));
+                    }
+                }
+                this.lanes.set(laneName, lane);
+            }
+        }
+
+        // Parse dependencies
+        this.prods = [];
+        if (data.prods) {
+            for (const depData of data.prods) {
+                this.prods.push(new DependencyRef(
+                    depData.producer_id,
+                    depData.dep_type
+                ));
+            }
+        }
+
+        // UI state
+        this.x = 0;
+        this.y = 0;
+        this.width = 0;
+        this.height = 0;
+        this.visible = true;
+        this.highlighted = false;
+    }
+
+    get earliestCycle() {
+        let min = this.fetchedCycle;
+        for (const lane of this.lanes.values()) {
+            min = Math.min(min, lane.earliestCycle);
+        }
+        return min;
+    }
+
+    get latestCycle() {
+        let max = this.retiredCycle || 0;
+        for (const lane of this.lanes.values()) {
+            max = Math.max(max, lane.latestCycle);
+        }
+        return max;
+    }
+
+    get totalLatency() {
+        if (this.retiredCycle !== null && this.retiredCycle !== undefined) {
+            return this.retiredCycle - this.fetchedCycle;
+        }
+        return null;
+    }
+
+    getAllStages() {
+        const stages = [];
+        for (const lane of this.lanes.values()) {
+            stages.push(...lane.stages);
+        }
+        return stages.sort((a, b) => a.startCycle - b.startCycle);
+    }
+
+    getStageAt(cycle) {
+        for (const lane of this.lanes.values()) {
+            for (const stage of lane.stages) {
+                if (cycle >= stage.startCycle && cycle < stage.endCycle) {
+                    return stage;
+                }
+            }
+        }
+        return null;
+    }
+
+    formatRegs() {
+        const src = this.srcRegs.map(r => `X${r}`).join(', ');
+        const dst = this.dstRegs.map(r => `X${r}`).join(', ');
+        return { src: src || '-', dst: dst || '-' };
+    }
+
+    formatPC() {
+        return '0x' + this.pc.toString(16).padStart(8, '0');
+    }
+
+    formatMemAddr() {
+        if (!this.isMemory || !this.memAddr) return null;
+        return '0x' + this.memAddr.toString(16).padStart(8, '0');
+    }
+}
+
+// Export for module usage
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { Op, Stage, Lane, DependencyRef, STAGE_COLORS, DEP_COLORS };
+}

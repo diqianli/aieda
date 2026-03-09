@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Canvas Test</title>
+    <style>
+        body { margin: 20px; padding: 0; background: #1a1a2e; color: white; font-family: sans-serif; }
+        #container { width: 800px; height: 400px; background: #16213e; border: 2px solid #e94560; }
+        #log { margin-top: 20px; padding: 10px; background: #0f3460; font-family: monospace; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1>Simple Canvas Test</h1>
+    <div id="container"></div>
+    <div id="log"></div>
+
+    <script>
+        const log = (msg) => {
+            document.getElementById('log').textContent += msg + '\n';
+            console.log(msg);
+        };
+
+        log('Step 1: Getting container...');
+        const container = document.getElementById('container');
+        log('Container: ' + container);
+        log('Container dimensions: ' + container.offsetWidth + ' x ' + container.offsetHeight);
+
+        log('\nStep 2: Creating canvas...');
+        const canvas = document.createElement('canvas');
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+        canvas.style.border = '1px solid yellow';
+        container.appendChild(canvas);
+        log('Canvas created and appended');
+
+        log('\nStep 3: Getting context...');
+        const ctx = canvas.getContext('2d');
+        log('Context: ' + ctx);
+
+        log('\nStep 4: Setting canvas size...');
+        const rect = container.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.scale(dpr, dpr);
+        log('Canvas size: ' + canvas.width + ' x ' + canvas.height);
+        log('Display size: ' + rect.width + ' x ' + rect.height);
+
+        log('\nStep 5: Drawing test content...');
+
+        // Fill background
+        ctx.fillStyle = '#0f3460';
+        ctx.fillRect(0, 0, rect.width, rect.height);
+        log('Background drawn');
+
+        // Draw some rectangles
+        const colors = ['#e94560', '#0d6efd', '#198754', '#ffc107'];
+        for (let i = 0; i < 4; i++) {
+            ctx.fillStyle = colors[i];
+            ctx.fillRect(20 + i * 180, 50, 150, 30);
+            log('Rectangle ' + i + ' drawn');
+        }
+
+        // Draw text
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Canvas is working!', rect.width / 2, 150);
+        log('Text drawn');
+
+        // Draw pipeline-like stages
+        const stages = ['F', 'Dc', 'Rn', 'Ds', 'Is', 'Ex', 'Me', 'Cm', 'Rt'];
+        const stageColors = [200, 180, 160, 140, 120, 60, 30, 280, 320];
+        const startX = 50;
+        const stageY = 200;
+        const stageW = 60;
+        const stageH = 40;
+
+        for (let i = 0; i < stages.length; i++) {
+            const x = startX + i * (stageW + 10);
+            ctx.fillStyle = `hsl(${stageColors[i]}, 70%, 55%)`;
+            ctx.fillRect(x, stageY, stageW, stageH);
+            ctx.strokeStyle = '#ffffff';
+            ctx.strokeRect(x, stageY, stageW, stageH);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '12px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(stages[i], x + stageW/2, stageY + stageH/2 + 4);
+        }
+        log('Pipeline stages drawn');
+
+        log('\n=== TEST COMPLETE ===');
+        log('If you see colored rectangles above, Canvas is working!');
+    </script>
+</body>
+</html>
