@@ -1,0 +1,719 @@
+/* CSS Variables */
+:root {
+  --nvidia-green: #76b900;
+  --nvidia-dark: #000;
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #12121a;
+  --bg-card: #1a1a24;
+  --text-primary: #ffffff;
+  --text-secondary: #a0a0a0;
+  --text-muted: #666;
+  --cred-high: #00c853;
+  --cred-medium: #76b900;
+  --cred-low: #ffb800;
+  --cred-very-low: #ff6b6b;
+  --border-color: #2a2a35;
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Reset & Base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+/* Header */
+.header {
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+  border-bottom: 1px solid var(--border-color);
+  padding: 1.5rem 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+}
+
+.header-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nvidia-icon {
+  font-size: 2rem;
+  color: var(--nvidia-green);
+}
+
+.logo h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  background: linear-gradient(90deg, var(--nvidia-green), #00e676);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.event-info {
+  display: flex;
+  gap: 1.5rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+/* Hero Section */
+.hero {
+  padding: 3rem 2rem;
+  text-align: center;
+}
+
+.hero-content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.hero h2 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  margin-bottom: 2rem;
+}
+
+.wordcloud-container {
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  padding: 2rem;
+  margin: 0 auto;
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
+}
+
+#wordcloud canvas {
+  max-width: 100%;
+}
+
+.cloud-legend {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  font-size: 0.85rem;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+}
+
+.legend-item.high {
+  background: rgba(0, 200, 83, 0.2);
+  color: var(--cred-high);
+}
+
+.legend-item.mid {
+  background: rgba(118, 185, 0, 0.2);
+  color: var(--cred-medium);
+}
+
+.legend-item.low {
+  background: rgba(255, 184, 0, 0.2);
+  color: var(--cred-low);
+}
+
+/* Timeline Section */
+.timeline-section {
+  padding: 3rem 2rem;
+  background: var(--bg-secondary);
+}
+
+.timeline-section h2 {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.timeline {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: flex;
+  overflow-x: auto;
+  padding: 1rem 0;
+  gap: 0;
+}
+
+.timeline-item {
+  flex: 1;
+  min-width: 120px;
+  position: relative;
+  padding: 1rem;
+  text-align: center;
+}
+
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--border-color);
+  z-index: 1;
+}
+
+.timeline-item:first-child::before {
+  left: 50%;
+}
+
+.timeline-item:last-child::before {
+  right: 50%;
+}
+
+.timeline-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--nvidia-green);
+  margin: 0 auto 1rem;
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 0 10px var(--nvidia-green);
+}
+
+.timeline-year {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--nvidia-green);
+  margin-bottom: 0.5rem;
+}
+
+.timeline-event {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* Products Section */
+.products-section {
+  padding: 3rem 2rem;
+}
+
+.products-section h2 {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.filter-bar {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  padding: 0.5rem 1.25rem;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.filter-btn:hover {
+  border-color: var(--nvidia-green);
+  color: var(--text-primary);
+}
+
+.filter-btn.active {
+  background: var(--nvidia-green);
+  border-color: var(--nvidia-green);
+  color: var(--nvidia-dark);
+  font-weight: 600;
+}
+
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Product Card */
+.product-card {
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow);
+  border-color: var(--nvidia-green);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.card-icon {
+  font-size: 2rem;
+}
+
+.card-title {
+  flex: 1;
+}
+
+.card-title h3 {
+  font-size: 1.2rem;
+  margin-bottom: 0.25rem;
+}
+
+.card-year {
+  font-size: 0.85rem;
+  color: var(--nvidia-green);
+  font-weight: 600;
+}
+
+.card-desc {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+/* Specs Table */
+.specs-table {
+  width: 100%;
+}
+
+.spec-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.spec-row:last-child {
+  border-bottom: none;
+}
+
+.spec-attr {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  min-width: 80px;
+}
+
+.spec-info {
+  flex: 1;
+  text-align: right;
+  font-size: 0.9rem;
+  padding-right: 1rem;
+}
+
+.spec-cred {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cred-bar {
+  width: 60px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border-color);
+  overflow: hidden;
+}
+
+.cred-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.cred-value {
+  font-size: 0.75rem;
+  min-width: 35px;
+  text-align: right;
+}
+
+/* Card Footer */
+.card-footer {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.sources-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.source-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.source-tag {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.75rem;
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  color: var(--text-secondary);
+}
+
+/* Rumors Section */
+.rumors-section {
+  padding: 3rem 2rem;
+  background: var(--bg-secondary);
+}
+
+.rumors-section h2 {
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.section-desc {
+  text-align: center;
+  color: var(--text-muted);
+  margin-bottom: 2rem;
+  font-size: 0.9rem;
+}
+
+.rumors-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.rumor-card {
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 1.25rem;
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.rumor-cred {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.rumor-info {
+  flex: 1;
+}
+
+.rumor-text {
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+}
+
+.rumor-note {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* Credibility Section */
+.credibility-section {
+  padding: 3rem 2rem;
+}
+
+.credibility-section h2 {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.credibility-guide {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.cred-item {
+  text-align: center;
+  padding: 1.5rem;
+  background: var(--bg-card);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.cred-item .cred-bar {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.cred-bar.high {
+  background: linear-gradient(90deg, var(--cred-high), #00e676);
+}
+
+.cred-bar.medium {
+  background: linear-gradient(90deg, var(--cred-medium), #8bc34a);
+}
+
+.cred-bar.low {
+  background: linear-gradient(90deg, var(--cred-low), #ffc107);
+}
+
+.cred-bar.very-low {
+  background: linear-gradient(90deg, var(--cred-very-low), #ff8a80);
+}
+
+.cred-label {
+  font-weight: 600;
+  font-size: 1.1rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.cred-desc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+/* Event Section */
+.event-section {
+  padding: 3rem 2rem;
+  background: var(--bg-secondary);
+}
+
+.event-section h2 {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.event-card {
+  max-width: 600px;
+  margin: 0 auto;
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 2rem;
+  border: 1px solid var(--border-color);
+}
+
+.event-detail {
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.event-detail:last-of-type {
+  border-bottom: none;
+}
+
+.event-detail .label {
+  color: var(--text-muted);
+}
+
+.event-detail .value {
+  font-weight: 600;
+}
+
+.event-themes {
+  padding-top: 1rem;
+  margin-top: 0.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.event-themes .label {
+  display: block;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+.themes-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.theme-tag {
+  background: linear-gradient(135deg, var(--nvidia-green), #00e676);
+  color: var(--nvidia-dark);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* Footer */
+.footer {
+  padding: 3rem 2rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.disclaimer {
+  max-width: 800px;
+  margin: 0 auto 2rem;
+  text-align: center;
+}
+
+.disclaimer h3 {
+  color: var(--cred-low);
+  margin-bottom: 1rem;
+}
+
+.disclaimer p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
+.update-time {
+  margin-top: 1rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.sources {
+  text-align: center;
+}
+
+.sources h4 {
+  margin-bottom: 1rem;
+  color: var(--text-secondary);
+}
+
+.source-links {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.source-links a {
+  color: var(--nvidia-green);
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 0.3s ease;
+}
+
+.source-links a:hover {
+  color: #00e676;
+  text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .logo h1 {
+    font-size: 1.25rem;
+  }
+
+  .hero h2 {
+    font-size: 1.5rem;
+  }
+
+  .wordcloud-container {
+    min-height: 300px;
+    padding: 1rem;
+  }
+
+  .products-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .timeline {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .timeline-item::before {
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    right: auto;
+    width: 3px;
+    height: 100%;
+  }
+
+  .timeline-item:first-child::before {
+    top: 50%;
+    bottom: auto;
+  }
+
+  .timeline-item:last-child::before {
+    bottom: 50%;
+    top: auto;
+  }
+
+  .spec-row {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .spec-info {
+    text-align: left;
+    padding-right: 0;
+    order: 3;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .cloud-legend {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .credibility-guide {
+    grid-template-columns: 1fr;
+  }
+
+  .rumors-grid {
+    grid-template-columns: 1fr;
+  }
+}

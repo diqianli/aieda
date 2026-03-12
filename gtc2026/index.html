@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GTC 2026 泄露信息汇总</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/wordcloud@1.2.2/src/wordcloud2.min.js"></script>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-content">
+      <div class="logo">
+        <span class="nvidia-icon">◈</span>
+        <h1>GTC 2026 泄露信息汇总</h1>
+      </div>
+      <div class="event-info">
+        <span class="date">2026年3月16-19日</span>
+        <span class="location">San Jose, CA</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section with Word Cloud -->
+  <section class="hero">
+    <div class="hero-content">
+      <h2>关键词云</h2>
+      <p class="subtitle">基于15次网络搜索的泄露信息关键词分析</p>
+      <div id="wordcloud" class="wordcloud-container"></div>
+      <div class="cloud-legend">
+        <span class="legend-item high">高权重(核心产品)</span>
+        <span class="legend-item mid">中权重(技术特性)</span>
+        <span class="legend-item low">低权重(传闻)</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Timeline Section -->
+  <section class="timeline-section">
+    <h2>产品发布时间线</h2>
+    <div class="timeline" id="timeline"></div>
+  </section>
+
+  <!-- Products Section -->
+  <section class="products-section">
+    <h2>产品详细信息</h2>
+    <div class="filter-bar">
+      <button class="filter-btn active" data-filter="all">全部</button>
+      <button class="filter-btn" data-filter="confirmed">已官宣</button>
+      <button class="filter-btn" data-filter="high">高可信度</button>
+      <button class="filter-btn" data-filter="rumor">传闻</button>
+    </div>
+    <div class="products-grid" id="products-grid"></div>
+  </section>
+
+  <!-- Rumors Section -->
+  <section class="rumors-section">
+    <h2>其他传闻</h2>
+    <p class="section-desc">以下信息可信度较低，请谨慎参考</p>
+    <div class="rumors-grid" id="rumors-grid"></div>
+  </section>
+
+  <!-- Credibility Guide -->
+  <section class="credibility-section">
+    <h2>可信度评估标准</h2>
+    <div class="credibility-guide">
+      <div class="cred-item">
+        <div class="cred-bar high"></div>
+        <span class="cred-label">90-100%</span>
+        <span class="cred-desc">官方确认或极高可信来源</span>
+      </div>
+      <div class="cred-item">
+        <div class="cred-bar medium"></div>
+        <span class="cred-label">70-89%</span>
+        <span class="cred-desc">多个可靠来源交叉验证</span>
+      </div>
+      <div class="cred-item">
+        <div class="cred-bar low"></div>
+        <span class="cred-label">50-69%</span>
+        <span class="cred-desc">单一来源或推测性信息</span>
+      </div>
+      <div class="cred-item">
+        <div class="cred-bar very-low"></div>
+        <span class="cred-label">&lt;50%</span>
+        <span class="cred-desc">纯传闻或已否认的信息</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Event Info -->
+  <section class="event-section">
+    <h2>GTC 2026 大会信息</h2>
+    <div class="event-card">
+      <div class="event-detail">
+        <span class="label">日期</span>
+        <span class="value">2026年3月16-19日</span>
+      </div>
+      <div class="event-detail">
+        <span class="label">地点</span>
+        <span class="value">San Jose, CA</span>
+      </div>
+      <div class="event-detail">
+        <span class="label">Keynote</span>
+        <span class="value">Jensen Huang, 3月16日</span>
+      </div>
+      <div class="event-themes">
+        <span class="label">主题</span>
+        <div class="themes-list">
+          <span class="theme-tag">Physical AI</span>
+          <span class="theme-tag">Agentic AI</span>
+          <span class="theme-tag">Inference</span>
+          <span class="theme-tag">AI Factories</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="disclaimer">
+      <h3>免责声明</h3>
+      <p>本页面汇总的信息来源于互联网公开渠道，包括技术论坛、新闻媒体和社交媒体。所有信息均未经NVIDIA官方确认，仅供参考。可信度评估基于信息来源的可靠性和交叉验证程度，不构成任何投资或购买建议。</p>
+      <p class="update-time">最后更新: 2026年3月</p>
+    </div>
+    <div class="sources">
+      <h4>主要信息来源</h4>
+      <div class="source-links">
+        <a href="https://www.nvidia.com/gtc/" target="_blank" rel="noopener">NVIDIA GTC官网</a>
+        <a href="https://www.tomshardware.com/" target="_blank" rel="noopener">Tom's Hardware</a>
+        <a href="https://videocardz.com/" target="_blank" rel="noopener">VideoCardz</a>
+        <a href="https://wccftech.com/" target="_blank" rel="noopener">Wccftech</a>
+        <a href="https://semianalysis.com/" target="_blank" rel="noopener">SemiAnalysis</a>
+        <a href="https://www.reddit.com/r/nvidia/" target="_blank" rel="noopener">r/nvidia</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
