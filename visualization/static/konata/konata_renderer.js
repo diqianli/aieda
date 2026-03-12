@@ -627,13 +627,20 @@ class KonataRenderer {
         const startIdx = Math.max(0, layout.yToOpIndex(this.config.headerHeight + this.config.timelineHeight) - 5);
         const endIdx = Math.min(this.ops.length - 1, layout.yToOpIndex(this.height) + 5);
 
+        let depCount = 0;
+        let drawnCount = 0;
+
         for (let i = startIdx; i <= endIdx; i++) {
             const op = this.ops[i];
             const consumerY = layout.opToY(i) + layout.rowHeight / 2;
 
             for (const dep of op.prods) {
+                depCount++;
                 const producer = this.opsMap.get(dep.producerId);
-                if (!producer) continue;
+                if (!producer) {
+                    console.log('renderDependencies: producer not found for dep', dep.producerId, 'in op', op.id);
+                    continue;
+                }
 
                 const producerIndex = this.ops.indexOf(producer);
                 if (producerIndex < startIdx - 5 || producerIndex > endIdx + 5) continue;
@@ -649,12 +656,24 @@ class KonataRenderer {
                 const startX = layout.cycleToX(producerCompleteCycle);
                 const endX = layout.cycleToX(consumerIssueCycle);
 
+                // Debug: log first few dependencies
+                if (drawnCount < 3) {
+                    console.log('renderDependencies: op', op.id, '-> producer', dep.producerId,
+                        'completeCycle:', producerCompleteCycle, 'issueCycle:', consumerIssueCycle,
+                        'startX:', startX, 'endX:', endX, 'labelWidth:', this.config.labelWidth, 'width:', this.width);
+                }
+
                 // Only draw if visible
                 if (endX < this.config.labelWidth || startX > this.width) continue;
 
                 // Draw arrow
                 this.drawDependencyArrow(ctx, startX, producerY, endX, consumerY, dep.color);
+                drawnCount++;
             }
+        }
+
+        if (depCount > 0) {
+            console.log('renderDependencies: total deps:', depCount, 'drawn:', drawnCount);
         }
     }
 
