@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Agent 在 IC 设计流程中的应用研究</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-content">
+            <a href="index.html" class="nav-brand">AI Agent × IC Design</a>
+            <ul class="nav-links">
+                <li><a href="#overview">行业概览</a></li>
+                <li><a href="#comparison">工具对比</a></li>
+                <li><a href="#commercial">国际厂商</a></li>
+                <li><a href="#domestic">国产工具</a></li>
+                <li><a href="#opensource">开源研究</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <h1>AI Agent 在 IC 设计流程中的应用研究</h1>
+        <p>深度解析 Agentic AI 如何革新芯片设计：从 RTL 代码生成到验证自动化的完整技术图谱</p>
+    </section>
+
+    <div class="container">
+        <!-- Overview Section -->
+        <section id="overview" class="section">
+            <h2 class="section-title">行业背景：Agentic AI 革命</h2>
+            <div class="detail-section">
+                <p style="margin-bottom: 1rem;">
+                    2024-2025年，<strong>Agentic AI（代理式人工智能）</strong>正在深刻改变 IC 设计的工作流程。与传统 AI 工具不同，Agentic AI 具备<strong>自主规划、多步推理、工具调用</strong>等能力，能够完成端到端的复杂设计任务。
+                </p>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value">10×</div>
+                        <div class="stat-label">生产力提升</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">30%</div>
+                        <div class="stat-label">工程师入门加速</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">83%</div>
+                        <div class="stat-label">RTL功能纠错率</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">2×</div>
+                        <div class="stat-label">设计周转加速</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Comparison Matrix -->
+        <section id="comparison" class="section">
+            <h2 class="section-title">工具能力对比矩阵</h2>
+            <div style="overflow-x: auto;">
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>厂商/工具</th>
+                            <th>RTL 生成</th>
+                            <th>PPA 优化</th>
+                            <th>验证自动化</th>
+                            <th>Agentic 自主度</th>
+                            <th>部署方式</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Cadence ChipStack AI</strong></td>
+                            <td class="check">✓ 完整</td>
+                            <td class="check">✓ 完整</td>
+                            <td class="check">✓ 完整</td>
+                            <td class="check">高 (Super Agent)</td>
+                            <td>云端/本地</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Siemens Questa One</strong></td>
+                            <td class="check">✓ 完整</td>
+                            <td class="partial">△ 部分</td>
+                            <td class="check">✓ 完整</td>
+                            <td class="check">高 (多Agent)</td>
+                            <td>本地为主</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Synopsys.ai</strong></td>
+                            <td class="check">✓ 完整</td>
+                            <td class="check">✓ 完整 (DSO.ai)</td>
+                            <td class="check">✓ 完整</td>
+                            <td class="check">高 (Copilot)</td>
+                            <td>云端/本地</td>
+                        </tr>
+                        <tr>
+                            <td><strong>芯华章 ChatDV</strong></td>
+                            <td class="partial">△ 辅助</td>
+                            <td class="none">—</td>
+                            <td class="check">✓ 完整</td>
+                            <td class="partial">中 (调试Agent)</td>
+                            <td>本地</td>
+                        </tr>
+                        <tr>
+                            <td><strong>思尔芯 S2C</strong></td>
+                            <td class="none">—</td>
+                            <td class="partial">△ 编译优化</td>
+                            <td class="partial">△ 原型验证</td>
+                            <td class="partial">中</td>
+                            <td>本地</td>
+                        </tr>
+                        <tr>
+                            <td><strong>ACE-RTL (研究)</strong></td>
+                            <td class="check">✓ 完整</td>
+                            <td class="none">—</td>
+                            <td class="partial">△</td>
+                            <td class="check">高</td>
+                            <td>开源</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Saarthi (研究)</strong></td>
+                            <td class="none">—</td>
+                            <td class="none">—</td>
+                            <td class="check">✓ 形式验证</td>
+                            <td class="check">高 (全自主)</td>
+                            <td>开源</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- International EDA Vendors -->
+        <section id="commercial" class="section">
+            <h2 class="section-title">EDA 三巨头（国际厂商）</h2>
+            <div class="card-grid">
+                <!-- Cadence -->
+                <div class="card cadence">
+                    <div class="card-header">
+                        <div class="card-logo cadence">C</div>
+                        <div>
+                            <div class="card-title">Cadence ChipStack AI</div>
+                            <div class="card-subtitle">世界首款芯片设计 Super Agent</div>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <p>Cadence 推出的 ChipStack AI Super Agent 是全球首个针对芯片设计和验证的代理式 AI 工作流平台，可实现高达 10× 的生产力提升。</p>
+                        <div class="card-tags">
+                            <span class="tag">RTL Code Agent</span>
+                            <span class="tag">Design Upgrade Agent</span>
+                            <span class="tag">SoC Agent</span>
+                        </div>
+                        <a href="cadence.html" class="card-link">查看详情 →</a>
+                    </div>
+                </div>
+
+                <!-- Siemens -->
+                <div class="card siemens">
+                    <div class="card-header">
+                        <div class="card-logo siemens">S</div>
+                        <div>
+                            <div class="card-title">Siemens Questa One</div>
+                            <div class="card-subtitle">Agentic Toolkit 验证工具链</div>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <p>Siemens Questa One Agentic Toolkit 将验证和设计从孤立的工具交互转变为智能的、域范围的多步工作流，实现 RTL 快速签核。</p>
+                        <div class="card-tags">
+                            <span class="tag">RTL Code Agent</span>
+                            <span class="tag">Verification Planning Agent</span>
+                            <span class="tag">Debug Agent</span>
+                        </div>
+                        <a href="siemens.html" class="card-link">查看详情 →</a>
+                    </div>
+                </div>
+
+                <!-- Synopsys -->
+                <div class="card synopsys">
+                    <div class="card-header">
+                        <div class="card-logo synopsys">S</div>
+                        <div>
+                            <div class="card-title">Synopsys.ai</div>
+                            <div class="card-subtitle">GenAI 驱动的 EDA 解决方案</div>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <p>Synopsys.ai Copilot 结合 DSO.ai 提供 RTL-to-GDSII 全流程 AI 优化，实现 30% 工程师入门加速和 35% 生产力提升。</p>
+                        <div class="card-tags">
+                            <span class="tag">Creative GenAI</span>
+                            <span class="tag">DSO.ai</span>
+                            <span class="tag">Fusion Compiler</span>
+                        </div>
+                        <a href="synopsys.html" class="card-link">查看详情 →</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Domestic Tools -->
+        <section id="domestic" class="section">
+            <h2 class="section-title">国产工具</h2>
+            <div class="card-grid">
+                <!-- Xinhua -->
+                <div class="card xinhua">
+                    <div class="card-header">
+                        <div class="card-logo xinhua">芯</div>
+                        <div>
+                            <div class="card-title">芯华章 ChatDV</div>
+                            <div class="card-subtitle">数字芯片验证大模型</div>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <p>芯华章联合 EDA 国创中心发布的自主知识产权数字芯片验证大模型，语法纠错率达 100%，功能纠错率达 83%。</p>
+                        <div class="card-tags">
+                            <span class="tag">LLM 驱动调试</span>
+                            <span class="tag">RTL 错误修复</span>
+                            <span class="tag">GalaxAI</span>
+                        </div>
+                        <a href="xinhua.html" class="card-link">查看详情 →</a>
+                    </div>
+                </div>
+
+                <!-- S2C -->
+                <div class="card s2c">
+                    <div class="card-header">
+                        <div class="card-logo s2c">S2C</div>
+                        <div>
+                            <div class="card-title">思尔芯 S2C</div>
+                            <div class="card-subtitle">AI 驱动原型验证</div>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <p>思尔芯通过 RCF（RTL Compile Flow）和 ICF（Incremental Compile Flow）显著提升超大规模芯片设计的自动化能力。</p>
+                        <div class="card-tags">
+                            <span class="tag">RCF/ICF 自动分割</span>
+                            <span class="tag">AI 编译优化</span>
+                            <span class="tag">原型验证</span>
+                        </div>
+                        <a href="s2c.html" class="card-link">查看详情 →</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Open Source / Research -->
+        <section id="opensource" class="section">
+            <h2 class="section-title">开源/研究工具</h2>
+            <div class="card-grid">
+                <!-- ACE-RTL -->
+                <div class="card opensource">
+                    <div class="card-header">
+                        <div class="card-logo opensource">ACE</div>
+                        <div>
+                            <div class="card-title">ACE-RTL</div>
+                            <div class="card-subtitle">Agentic Context Evolution</div>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <p>结合 Agentic Context Evolution 与 RTL 专用 LLM 的框架，通过代理式上下文演化提升硬件设计自动化水平。</p>
+                        <div class="card-tags">
+                            <span class="tag">RTL 专用 LLM</span>
+                            <span class="tag">上下文演化</span>
+                            <span class="tag">arXiv 2025</span>
+                        </div>
+                        <a href="opensource.html#ace-rtl" class="card-link">查看详情 →</a>
+                    </div>
+                </div>
+
+                <!-- Saarthi -->
+                <div class="card opensource">
+                    <div class="card-header">
+                        <div class="card-logo opensource">S</div>
+                        <div>
+                            <div class="card-title">Saarthi</div>
+                            <div class="card-subtitle">首个 AI 形式验证工程师</div>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <p>Infineon 开发的全自主 AI 形式验证代理，能够端到端验证 RTL 设计，从简单计数器到复杂 FIFO 结构。</p>
+                        <div class="card-tags">
+                            <span class="tag">全自主验证</span>
+                            <span class="tag">多Agent协作</span>
+                            <span class="tag">Infineon</span>
+                        </div>
+                        <a href="opensource.html#saarthi" class="card-link">查看详情 →</a>
+                    </div>
+                </div>
+
+                <!-- VerilogEval -->
+                <div class="card opensource">
+                    <div class="card-header">
+                        <div class="card-logo opensource">V</div>
+                        <div>
+                            <div class="card-title">VerilogEval</div>
+                            <div class="card-subtitle">RTL 生成质量基准测试</div>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <p>NVIDIA Labs 开发的 Verilog 代码生成评估基准，包含 156 个来自 HDLBits 的问题，支持代码补全和规格到 RTL 任务。</p>
+                        <div class="card-tags">
+                            <span class="tag">基准测试</span>
+                            <span class="tag">NVIDIA Labs</span>
+                            <span class="tag">开源</span>
+                        </div>
+                        <a href="opensource.html#verilogeval" class="card-link">查看详情 →</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Technology Roadmap -->
+        <section class="section">
+            <h2 class="section-title">技术演进路线</h2>
+            <div class="architecture-box">
+                <h4>AI Agent 在 IC 设计中的能力演进</h4>
+                <div class="arch-flow">
+                    <div class="arch-step">
+                        <strong>辅助型 AI</strong><br>
+                        <small>代码补全、语法检查</small>
+                    </div>
+                    <span class="arch-arrow">→</span>
+                    <div class="arch-step">
+                        <strong>生成型 AI</strong><br>
+                        <small>RTL 生成、测试用例生成</small>
+                    </div>
+                    <span class="arch-arrow">→</span>
+                    <div class="arch-step">
+                        <strong>Agentic AI</strong><br>
+                        <small>多步推理、工具调用</small>
+                    </div>
+                    <span class="arch-arrow">→</span>
+                    <div class="arch-step">
+                        <strong>Super Agent</strong><br>
+                        <small>端到端自主设计</small>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>© 2025 AI Agent in IC Design Research | 基于《AI辅助RTL代码生成工具推荐》深度研究</p>
+        <p style="margin-top: 0.5rem; font-size: 0.9rem; opacity: 0.8;">
+            数据来源：各公司官方发布、学术论文、行业媒体报道
+        </p>
+    </footer>
+</body>
+</html>
