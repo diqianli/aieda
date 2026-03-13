@@ -11,6 +11,10 @@ document.addEventListener('DOMContentLoaded', function() {
   initMysterySection();
   initSupplySection();
   initFeynmanSection();
+  initAIInferenceSection();
+  initNVIDIAGroqDeal();
+  initGroqComparison();
+  initCloudPricing();
   initChanRumors();
   initOtherRumors();
   initValidationSection();
@@ -19,6 +23,161 @@ document.addEventListener('DOMContentLoaded', function() {
   initSourceTypes();
   initFilters();
 });
+
+// AI Inference Section
+function initAIInferenceSection() {
+  const grid = document.getElementById('inference-grid');
+  if (!grid || typeof inferenceComparison === 'undefined') return;
+
+  // 添加Groq LPU卡片
+  if (leaksData.groqLPU) {
+    const card = createInferenceCard(leaksData.groqLPU);
+    grid.appendChild(card);
+  }
+
+  // 添加NVIDIA-Groq交易卡片
+  if (leaksData.nvidiaGroqDeal) {
+    const card = createInferenceCard(leaksData.nvidiaGroqDeal);
+    grid.appendChild(card);
+  }
+}
+
+function createInferenceCard(product) {
+  const card = document.createElement('div');
+  card.className = 'inference-card';
+
+  const avgCred = Math.round(
+    product.specs.reduce((sum, spec) => sum + spec.credibility, 0) / product.specs.length
+  );
+
+  const topSpecs = product.specs.slice(0, 3);
+  const specsHTML = topSpecs.map(spec => `
+    <div class="inference-stat">
+      <div class="inference-stat-value" style="color: ${getCredibilityColor(spec.credibility)}">${spec.credibility}%</div>
+      <div class="inference-stat-label">${spec.attr}</div>
+    </div>
+  `).join('');
+
+  card.innerHTML = `
+    <div class="inference-card-header">
+      <div>
+        <span class="inference-card-icon">${product.icon}</span>
+        <span class="inference-card-title">${product.name}</span>
+      </div>
+      <span class="inference-card-value">${avgCred}%</span>
+    </div>
+    <div class="inference-card-desc">${product.description}</div>
+    <div class="inference-stats">
+      ${specsHTML}
+    </div>
+  `;
+
+  return card;
+}
+
+// NVIDIA-Groq Deal Section
+function initNVIDIAGroqDeal() {
+  const container = document.getElementById('deal-content');
+  if (!container || !leaksData.nvidiaGroqDeal) return;
+
+  leaksData.nvidiaGroqDeal.specs.forEach(spec => {
+    const item = document.createElement('div');
+    item.className = 'deal-item';
+
+    const icon = spec.credibility >= 90 ? '✅' : spec.credibility >= 70 ? '📌' : '💡';
+    const credColor = getCredibilityColor(spec.credibility);
+
+    item.innerHTML = `
+      <div class="deal-item-icon">${icon}</div>
+      <div class="deal-item-content">
+        <div class="deal-item-title">${spec.attr}</div>
+        <div class="deal-item-desc">${spec.info}</div>
+      </div>
+      <div class="deal-item-cred">
+        <div class="deal-item-cred-value" style="color: ${credColor}">${spec.credibility}%</div>
+        <div class="deal-item-cred-label">可信度</div>
+      </div>
+    `;
+
+    container.appendChild(item);
+  });
+}
+
+// Groq Comparison Section
+function initGroqComparison() {
+  const container = document.getElementById('groq-comparison');
+  if (!container || typeof inferenceComparison === 'undefined') return;
+
+  // Header
+  const header = document.createElement('div');
+  header.className = 'groq-comparison-row header';
+  header.innerHTML = `
+    <span>指标</span>
+    <span class="groq-value groq">Groq LPU</span>
+    <span class="groq-value nvidia">NVIDIA H100</span>
+    <span>差距</span>
+  `;
+  container.appendChild(header);
+
+  // Data rows
+  inferenceComparison.comparison.forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'groq-comparison-row';
+
+    const isHighlight = item.ratio && item.ratio.includes('x');
+    row.innerHTML = `
+      <span>${item.metric}</span>
+      <span class="groq-value groq">${item.groq}</span>
+      <span class="groq-value nvidia">${item.nvidia}</span>
+      <span class="groq-ratio ${isHighlight ? 'highlight' : ''}">${item.ratio}</span>
+    `;
+    container.appendChild(row);
+  });
+}
+
+// Cloud Pricing Section
+function initCloudPricing() {
+  const grid = document.getElementById('cloud-grid');
+  if (!grid || typeof cloudPricing === 'undefined') return;
+
+  const providerIcons = {
+    'AWS': '🟠',
+    'Azure': '🔵',
+    'Google Cloud': '🔷',
+    'Oracle Cloud': '🔴'
+  };
+
+  cloudPricing.providers.forEach(provider => {
+    const card = document.createElement('div');
+    card.className = `cloud-card ${provider.name.toLowerCase().replace(' ', '')}`;
+
+    const pricingHTML = Object.entries(provider.pricing).map(([gpu, price]) => `
+      <div class="cloud-price-row">
+        <span class="cloud-price-gpu">${gpu.toUpperCase()}</span>
+        <span class="cloud-price-value">${price}/hr</span>
+      </div>
+    `).join('');
+
+    const featuresHTML = provider.features.map(f => `
+      <div class="cloud-feature">• ${f}</div>
+    `).join('');
+
+    card.innerHTML = `
+      <div class="cloud-provider-name">
+        ${providerIcons[provider.name] || '☁️'} ${provider.name}
+      </div>
+      <div class="cloud-relationship">${provider.relationship}</div>
+      <div class="cloud-pricing-table">
+        ${pricingHTML}
+      </div>
+      <div class="cloud-features">
+        ${featuresHTML}
+      </div>
+    `;
+
+    grid.appendChild(card);
+  });
+}
 
 // Word Cloud Initialization
 function initWordCloud() {
