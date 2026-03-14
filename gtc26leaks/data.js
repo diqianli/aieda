@@ -451,37 +451,68 @@ const leaksData = {
     name: 'Feynman 架构',
     year: '2028',
     icon: '🚀',
-    description: '下一代GPU架构，采用先进制程和3D堆叠技术',
+    description: '下一代GPU架构，2025年3月GTC大会官方确认存在，具体制程和规格未公布',
     heatScore: 62,
     heatTrend: 'rising',
     totalMentions: 4567,
-    firstAppeared: '2025-02-01',
-    lastUpdated: '2025-03-02',
+    firstAppeared: '2025-03-18',
+    lastUpdated: '2025-03-18',
     specs: [
       {
-        attr: '制程',
-        info: 'TSMC A16 (1.6nm) 或 Intel 18A',
-        credibility: 75,
-        sources: ['feynman_digitimes', 'feynman_chiphell', 'feynman_semiwiki'],
+        attr: '官方确认',
+        info: 'NVIDIA GTC 2025 (2025年3月18日) Jensen Huang 主题演讲确认',
+        credibility: 100,
+        sources: ['nvidia_official', 'arstechnica'],
         crossValidated: true,
-        validationLevel: 3,
-        note: '存在制程选择分歧'
+        validationLevel: 5,
+        official: true
+      },
+      {
+        attr: '发布时间',
+        info: '2028年',
+        credibility: 100,
+        sources: ['nvidia_official'],
+        crossValidated: true,
+        validationLevel: 5,
+        official: true
+      },
+      {
+        attr: 'CPU搭配',
+        info: 'Vera CPU',
+        credibility: 100,
+        sources: ['nvidia_official'],
+        crossValidated: true,
+        validationLevel: 5,
+        official: true
+      },
+      {
+        attr: '制程',
+        info: 'TSMC A16 (1.6nm) 或 Intel 18A - 【媒体推测，非官方确认】',
+        credibility: 55,
+        sources: ['feynman_digitimes', 'feynman_chiphell', 'feynman_semiwiki'],
+        crossValidated: false,
+        validationLevel: 2,
+        note: '⚠️ 未获官方确认，基于行业媒体推测'
+        warning: '非官方信息'
       },
       {
         attr: 'HBM',
-        info: 'HBM4e，单栈1TB',
-        credibility: 80,
+        info: 'HBM4e，单栈1TB - 【媒体推测】',
+        credibility: 60,
         sources: ['feynman_chiphell'],
-        crossValidated: true,
-        validationLevel: 2
+        crossValidated: false,
+        validationLevel: 2,
+        note: '未获官方确认'
       },
       {
         attr: '3D堆叠',
-        info: 'SRAM chiplets',
-        credibility: 70,
+        info: 'SRAM chiplets - 【媒体推测】',
+        credibility: 50,
         sources: ['feynam_semianalysis'],
         crossValidated: false,
-        validationLevel: 1
+        validationLevel: 1,
+        note: '⚠️ 纯属媒体推测，无官方来源',
+        warning: '非官方信息'
       },
       {
         attr: 'PowerVia',
@@ -528,11 +559,12 @@ const leaksData = {
     specs: [
       {
         attr: '供应商',
-        info: '三星、SK Hynix为主，Micron被排除',
+        info: 'SK Hynix和Samsung为主要供应商，Micron份额较小（未被完全排除）',
         credibility: 85,
-        sources: ['hbm4_yahoo', 'hbm4_igorslab'],
+        sources: ['hbm4_yahoo', 'hbm4_igorslab', 'trendforce'],
         crossValidated: true,
-        validationLevel: 3
+        validationLevel: 3,
+        note: 'Micron是HBM3E认证供应商，HBM4份额较小但未被排除'
       },
       {
         attr: '速度要求',
