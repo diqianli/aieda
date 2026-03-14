@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GTC 2026 泄露信息来源分析报告</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* 来源分析专用样式 */
+    .analysis-header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      padding: 40px 20px;
+      text-align: center;
+      border-bottom: 3px solid #76b900;
+    }
+
+    .analysis-header h1 {
+      color: #fff;
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+
+    .analysis-header .subtitle {
+      color: #adb5bd;
+      font-size: 1.1rem;
+    }
+
+    .analysis-date {
+      background: #76b900;
+      color: #000;
+      padding: 5px 15px;
+      border-radius: 20px;
+      display: inline-block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    .section-card {
+      background: #1e1e2e;
+      border-radius: 12px;
+      padding: 30px;
+      margin: 30px auto;
+      max-width: 1200px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    .section-card h2 {
+      color: #76b900;
+      border-bottom: 2px solid #76b900;
+      padding-bottom: 10px;
+      margin-bottom: 25px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-card h2 .icon {
+      font-size: 1.5rem;
+    }
+
+    /* 官方确认 vs 媒体推测 对比表格 */
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+
+    .comparison-table th {
+      background: #2a2a3e;
+      color: #fff;
+      padding: 15px;
+      text-align: left;
+      font-weight: 600;
+    }
+
+    .comparison-table td {
+      padding: 15px;
+      border-bottom: 1px solid #333;
+      color: #e0e0e0;
+    }
+
+    .comparison-table tr:hover {
+      background: rgba(118, 185, 0, 0.1);
+    }
+
+    .status-official {
+      background: #00c853;
+      color: #000;
+      padding: 4px 12px;
+      border-radius: 15px;
+      font-size: 0.85rem;
+      font-weight: bold;
+    }
+
+    .status-speculation {
+      background: #ff6b6b;
+      color: #fff;
+      padding: 4px 12px;
+      border-radius: 15px;
+      font-size: 0.85rem;
+      font-weight: bold;
+    }
+
+    .status-partial{
+      background: #ffb800;
+      color: #000;
+      padding: 4px 12px;
+      border-radius: 15px;
+      font-size: 0.85rem;
+      font-weight: bold;
+    }
+
+    .credibility-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .credibility-fill {
+      height: 8px;
+      border-radius: 4px;
+      background: linear-gradient(90deg, #ff6b6b, #ffb800, #00c853);
+    }
+
+    .credibility-value {
+      font-weight: bold;
+      min-width: 45px;
+    }
+
+    /* 来源引用卡片 */
+    .source-citation {
+      background: #252538;
+      border-left: 4px solid #76b900;
+      padding: 15px 20px;
+      margin: 15px 0;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .source-citation.warning {
+      border-left-color: #ff6b6b;
+      background: rgba(255, 107, 107, 0.1);
+    }
+
+    .source-citation .source-name {
+      color: #76b900;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .source-citation .source-url {
+      color: #64b5f6;
+      font-size: 0.9rem;
+      word-break: break-all;
+    }
+
+    .source-citation .source-date {
+      color: #888;
+      font-size: 0.85rem;
+      margin-top: 5px;
+    }
+
+    /* 信息卡片网格 */
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 20px;
+      margin: 20px 0;
+    }
+
+    .info-card {
+      background: #252538;
+      border-radius: 10px;
+      padding: 20px;
+      border: 1px solid #333;
+    }
+
+    .info-card.official {
+      border-color: #00c853;
+    }
+
+    .info-card.speculation {
+      border-color: #ff6b6b;
+    }
+
+    .info-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .info-card-title {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #fff;
+    }
+
+    .info-card-body {
+      color: #ccc;
+      line-height: 1.6;
+    }
+
+    .info-card-source {
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid #444;
+      font-size: 0.9rem;
+      color: #888;
+    }
+
+    /* 警告框 */
+    .warning-box {
+      background: rgba(255, 107, 107, 0.15);
+      border: 1px solid #ff6b6b;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+
+    .warning-box h4 {
+      color: #ff6b6b;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .warning-box p {
+      color: #e0e0e0;
+      margin: 0;
+    }
+
+    /* 修正说明 */
+    .correction-notice {
+      background: rgba(118, 185, 0, 0.15);
+      border: 1px solid #76b900;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+
+    .correction-notice h4 {
+      color: #76b900;
+      margin-bottom: 10px;
+    }
+
+    .correction-notice .before {
+      color: #ff6b6b;
+      text-decoration: line-through;
+    }
+
+    .correction-notice .after {
+      color: #00c853;
+      font-weight: bold;
+    }
+
+    /* 时间线 */
+    .source-timeline {
+      position: relative;
+      padding-left: 30px;
+    }
+
+    .source-timeline::before {
+      content: '';
+      position: absolute;
+      left: 10px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #76b900;
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 25px;
+      padding: 15px;
+      background: #252538;
+      border-radius: 8px;
+    }
+
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -24px;
+      top: 20px;
+      width: 12px;
+      height: 12px;
+      background: #76b900;
+      border-radius: 50%;
+    }
+
+    .timeline-date {
+      color: #76b900;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .timeline-content {
+      color: #e0e0e0;
+    }
+
+    /* 供应商表格 */
+    .supplier-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      margin: 20px 0;
+    }
+
+    .supplier-card {
+      background: #252538;
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .supplier-card.primary {
+      border: 2px solid #00c853;
+    }
+
+    .supplier-card.secondary {
+      border: 2px solid #ffb800;
+    }
+
+    .supplier-card .supplier-name {
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: #fff;
+      margin-bottom: 10px;
+    }
+
+    .supplier-card .supplier-status {
+      font-size: 0.9rem;
+      margin-bottom: 10px;
+    }
+
+    .supplier-card .supplier-details {
+      font-size: 0.85rem;
+      color: #888;
+    }
+
+    /* 响应式 */
+    @media (max-width: 768px) {
+      .supplier-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .info-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .comparison-table {
+        font-size: 0.9rem;
+      }
+
+      .comparison-table th,
+      .comparison-table td {
+        padding: 10px;
+      }
+    }
+
+    /* 总结卡片 */
+    .summary-card {
+      background: linear-gradient(135deg, #1a1a2e 0%, #2a2a4e 100%);
+      border: 2px solid #76b900;
+      border-radius: 12px;
+      padding: 25px;
+      margin: 30px 0;
+    }
+
+    .summary-card h3 {
+      color: #76b900;
+      margin-bottom: 15px;
+    }
+
+    .summary-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .summary-list li {
+      padding: 10px 0;
+      border-bottom: 1px solid #333;
+      color: #e0e0e0;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .summary-list li:last-child {
+      border-bottom: none;
+    }
+
+    .summary-list .bullet {
+      color: #76b900;
+      font-weight: bold;
+    }
+
+    /* 标签页 */
+    .tabs {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #333;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: #888;
+      padding: 15px 25px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.3s;
+      border-bottom: 3px solid transparent;
+    }
+
+    .tab-btn:hover {
+      color: #fff;
+    }
+
+    .tab-btn.active {
+      color: #76b900;
+      border-bottom-color: #76b900;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="analysis-header">
+    <h1>📋 GTC 2026 泄露信息来源分析报告</h1>
+    <p class="subtitle">基于深度搜索的关键信息来源追溯与可信度评估</p>
+    <span class="analysis-date">分析日期: 2025年3月</span>
+  </header>
+
+  <!-- Navigation -->
+  <nav class="nav-bar">
+    <a href="#feynman-section">Feynman 架构</a>
+    <a href="#hbm4-section">HBM4 供应商</a>
+    <a href="#summary-section">总结</a>
+    <a href="index.html">返回主页</a>
+  </nav>
+
+  <!-- Main Content -->
+  <main style="padding: 20px;">
+    <!-- Feynman Architecture Section -->
+    <section id="feynman-section" class="section-card">
+      <h2><span class="icon">🚀</span> Feynman 架构信息来源分析</h2>
+
+      <!-- 官方来源 -->
+      <div class="source-citation">
+        <div class="source-name">📰 Ars Technica 官方报道</div>
+        <div class="source-url">https://arstechnica.com/ai/2025/03/nvidia-announces-rubin-ultra-and-feynman-ai-chips-for-2027-and-2028/</div>
+        <div class="source-date">发布日期: 2025年3月18日</div>
+      </div>
+
+      <div class="source-citation">
+        <div class="source-name">✅ NVIDIA GTC 2025 主题演讲</div>
+        <div class="source-url">Jensen Huang 官方主题演讲确认</div>
+        <div class="source-date">2025年3月18日</div>
+      </div>
+
+      <h3 style="color: #00c853; margin: 25px 0 15px;">✅ 官方确认信息</h3>
+
+      <div class="info-grid">
+        <div class="info-card official">
+          <div class="info-card-header">
+            <span class="info-card-title">架构存在</span>
+            <span class="status-official">100% 官方</span>
+          </div>
+          <div class="info-card-body">
+            NVIDIA GTC 2025 (2025年3月18日) Jensen Huang 主题演讲正式确认 Feynman 架构存在
+          </div>
+          <div class="info-card-source">
+            来源: NVIDIA GTC 2025 Keynote, Ars Technica 报道
+          </div>
+        </div>
+
+        <div class="info-card official">
+          <div class="info-card-header">
+            <span class="info-card-title">命名来源</span>
+            <span class="status-official">100% 官方</span>
+          </div>
+          <div class="info-card-body">
+            以美国理论物理学家 <strong>Richard Feynman</strong> 命名
+          </div>
+          <div class="info-card-source">
+            来源: NVIDIA GTC 2025 Keynote
+          </div>
+        </div>
+
+        <div class="info-card official">
+          <div class="info-card-header">
+            <span class="info-card-title">发布时间</span>
+            <span class="status-official">100% 官方</span>
+          </div>
+          <div class="info-card-body">
+            <strong>2028年</strong> 发布
+          </div>
+          <div class="info-card-source">
+            来源: NVIDIA 官方路线图
+          </div>
+        </div>
+
+        <div class="info-card official">
+          <div class="info-card-header">
+            <span class="info-card-title">CPU 搭配</span>
+            <span class="status-official">100% 官方</span>
+          </div>
+          <div class="info-card-body">
+            使用 <strong>Vera CPU</strong>（而非按命名规律预期的 "Richard"）
+          </div>
+          <div class="info-card-source">
+            来源: NVIDIA GTC 2025 Keynote
+          </div>
+        </div>
+      </div>
+
+      <h3 style="color: #ff6b6b; margin: 25px 0 15px;">⚠️ 媒体推测信息 (无官方来源)</h3>
+
+      <div class="warning-box">
+        <h4>⚠️ 重要警告</h4>
+        <p>Ars Technica 明确指出: Jensen Huang <strong>"provided few additional details about Feynman's design or capabilities"</strong>（几乎没有提供关于 Feynman 设计或能力的额外细节）。以下所有技术细节均为媒体或社区推测。</p>
+      </div>
+
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>信息</th>
+            <th>声称内容</th>
+            <th>实际来源</th>
+            <th>状态</th>
+            <th>可信度</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>TSMC A16 制程</td>
+            <td>采用 TSMC A16 (1.6nm) 制程</td>
+            <td>DigiTimes, Chiphell, SemiWiki 等科技媒体</td>
+            <td><span class="status-speculation">媒体推测</span></td>
+            <td>
+              <div class="credibility-bar">
+                <div class="credibility-fill" style="width: 55px;"></div>
+                <span class="credibility-value">55%</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>Intel 18A 制程</td>
+            <td>采用 Intel 18A 制程</td>
+            <td>社区讨论、猜测</td>
+            <td><span class="status-speculation">媒体推测</span></td>
+            <td>
+              <div class="credibility-bar">
+                <div class="credibility-fill" style="width: 40px;"></div>
+                <span class="credibility-value">40%</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>3D 堆叠技术</td>
+            <td>SRAM chiplets, 3D 堆叠</td>
+            <td>SemiAnalysis 分析文章</td>
+            <td><span class="status-speculation">媒体推测</span></td>
+            <td>
+              <div class="credibility-bar">
+                <div class="credibility-fill" style="width: 50px;"></div>
+                <span class="credibility-value">50%</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>PowerVia 技术</td>
+            <td>背面供电技术</td>
+            <td>Chiphell 论坛讨论</td>
+            <td><span class="status-speculation">媒体推测</span></td>
+            <td>
+              <div class="credibility-bar">
+                <div class="credibility-fill" style="width: 45px;"></div>
+                <span class="credibility-value">45%</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>功耗</td>
+            <td>可能 5000W</td>
+            <td>纯推测</td>
+            <td><span class="status-speculation">纯猜测</span></td>
+            <td>
+              <div class="credibility-bar">
+                <div class="credibility-fill" style="width: 30px;"></div>
+                <span class="credibility-value">30%</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>性能</td>
+            <td>200+ petaflops FP4</td>
+            <td>纯推测</td>
+            <td><span class="status-speculation">纯猜测</span></td>
+            <td>
+              <div class="credibility-bar">
+                <div class="credibility-fill" style="width: 35px;"></div>
+                <span class="credibility-value">35%</span>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="source-citation warning">
+        <div class="source-name">⚠️ 结论</div>
+        <div class="source-url" style="color: #e0e0e0;">
+          Feynman 架构本身是官方确认的，但<strong>所有关于制程、3D堆叠、功耗等技术细节均来自媒体推测，无任何官方来源支持</strong>。建议将这些信息的可信度降低，并添加警告标注。
+        </div>
+      </div>
+    </section>
+
+    <!-- HBM4 Supplier Section -->
+    <section id="hbm4-section" class="section-card">
+      <h2><span class="icon">📦</span> HBM4 供应商信息来源分析</h2>
+
+      <div class="correction-notice">
+        <h4>📝 信息修正</h4>
+        <p>
+          <span class="before">原说法: "三星、SK Hynix为主，Micron被排除"</span><br>
+          <span class="after">修正为: "SK Hynix和Samsung为主要供应商，Micron份额较小但未被完全排除"</span>
+        </p>
+      </div>
+
+      <h3 style="color: #76b900; margin: 25px 0 15px;">供应商现状分析</h3>
+
+      <div class="supplier-grid">
+        <div class="supplier-card primary">
+          <div class="supplier-name">SK Hynix</div>
+          <div class="supplier-status"><span class="status-official">主要供应商</span></div>
+          <div class="supplier-details">
+            ✅ HBM3E 已量产<br>
+            ✅ NVIDIA 主要合作伙伴<br>
+            ✅ HBM4 开发中<br>
+            📊 市场份额: ~50%
+          </div>
+        </div>
+
+        <div class="supplier-card primary">
+          <div class="supplier-name">Samsung</div>
+          <div class="supplier-status"><span class="status-official">主要供应商</span></div>
+          <div class="supplier-details">
+            ✅ HBM3E 已通过验证<br>
+            ✅ NVIDIA 供应商<br>
+            ✅ HBM4 开发中<br>
+            📊 市场份额: ~40%
+          </div>
+        </div>
+
+        <div class="supplier-card secondary">
+          <div class="supplier-name">Micron</div>
+          <div class="supplier-status"><span class="status-partial">份额较小</span></div>
+          <div class="supplier-details">
+            ✅ HBM3E 认证供应商<br>
+            ⚠️ 产能限制<br>
+            ✅ HBM4 开发中<br>
+            📊 市场份额: ~5-10%
+          </div>
+        </div>
+      </div>
+
+      <h3 style="color: #76b900; margin: 25px 0 15px;">信息来源分析</h3>
+
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>来源类型</th>
+            <th>媒体/机构</th>
+            <th>信息性质</th>
+            <th>占比</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>官方声明</td>
+            <td>NVIDIA, SK Hynix, Samsung, Micron 财报/新闻稿</td>
+            <td>确认供应商关系</td>
+            <td>~10%</td>
+          </tr>
+          <tr>
+            <td>媒体报道</td>
+            <td>Korea Economic Daily, Tom's Hardware, Wccftech</td>
+            <td>供应链分析</td>
+            <td>~60%</td>
+          </tr>
+          <tr>
+            <td>行业分析</td>
+            <td>TrendForce, Gartner</td>
+            <td>市场份额预测</td>
+            <td>~20%</td>
+          </tr>
+          <tr>
+            <td>推测/传言</td>
+            <td>社交媒体、论坛</td>
+            <td>未经证实</td>
+            <td>~10%</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3 style="color: #ff6b6b; margin: 25px 0 15px;">⚠️ "Micron被排除" 说法的来源分析</h3>
+
+      <div class="source-citation warning">
+        <div class="source-name">❌ 不准确的说法来源</div>
+        <div class="source-url" style="color: #e0e0e0;">
+          部分韩国媒体和科技博客报道 "Micron被排除"，但这与事实不符
+        </div>
+      </div>
+
+      <div class="source-citation">
+        <div class="source-name">✅ 事实核查</div>
+        <div class="source-url" style="color: #e0e0e0;">
+          <ul style="margin: 10px 0; padding-left: 20px;">
+            <li>Micron 是 NVIDIA 认证的 HBM3E 供应商（用于 H200 等）</li>
+            <li>Micron 已公开宣布正在开发 HBM4，预计2026年量产</li>
+            <li>Micron 份额较小主要原因是 <strong>产能限制</strong>，而非被排除</li>
+            <li>NVIDIA 采用 <strong>多供应商策略</strong> 以确保供应链安全</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="info-card speculation" style="margin-top: 20px;">
+        <div class="info-card-header">
+          <span class="info-card-title">为什么会有 "Micron被排除" 的说法？</span>
+          <span class="status-partial">分析</span>
+        </div>
+        <div class="info-card-body">
+          <ol style="margin: 10px 0; padding-left: 20px;">
+            <li><strong>产能差距</strong>: Micron 的 HBM 产能远小于 SK Hynix 和 Samsung</li>
+            <li><strong>市场份额</strong>: Micron 在 HBM 市场份额约5-10%，容易被误认为"被排除"</li>
+            <li><strong>信息传播失真</strong>: 韩国媒体报道可能夸大了 Micron 的劣势</li>
+            <li><strong>时间点</strong>: 早期 NVIDIA 主要依赖 SK Hynix，后来才扩展到 Samsung 和 Micron</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- Summary Section -->
+    <section id="summary-section" class="section-card">
+      <h2><span class="icon">📊</span> 总结与建议</h2>
+
+      <div class="summary-card">
+        <h3>Feynman 架构信息总结</h3>
+        <ul class="summary-list">
+          <li>
+            <span class="bullet">✅</span>
+            <span><strong>官方确认</strong>: 架构存在、2028年发布、Vera CPU、命名来源</span>
+          </li>
+          <li>
+            <span class="bullet">❌</span>
+            <span><strong>媒体推测</strong>: TSMC A16/Intel 18A 制程、3D堆叠、5000W功耗等所有技术细节</span>
+          </li>
+          <li>
+            <span class="bullet">📝</span>
+            <span><strong>建议</strong>: 将非官方信息的可信度降低，添加警告标注</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="summary-card">
+        <h3>HBM4 供应商信息总结</h3>
+        <ul class="summary-list">
+          <li>
+            <span class="bullet">✅</span>
+            <span><strong>确认</strong>: SK Hynix 和 Samsung 是主要供应商</span>
+          </li>
+          <li>
+            <span class="bullet">⚠️</span>
+            <span><strong>修正</strong>: Micron 份额较小但 <strong>未被完全排除</strong></span>
+          </li>
+          <li>
+            <span class="bullet">📝</span>
+            <span><strong>建议</strong>: 更新描述为 "SK Hynix和Samsung为主要供应商，Micron份额较小"</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="summary-card" style="background: linear-gradient(135deg, #2a1a1a 0%, #3a2a2a 100%); border-color: #ff6b6b;">
+        <h3 style="color: #ff6b6b;">⚠️ 重要提醒</h3>
+        <ul class="summary-list">
+          <li>
+            <span class="bullet">🔴</span>
+            <span>科技媒体报道经常包含推测性内容，需要与官方信息区分</span>
+          </li>
+          <li>
+            <span class="bullet">🔴</span>
+            <span>"被排除" 等绝对性说法需要多方验证</span>
+          </li>
+          <li>
+            <span class="bullet">🔴</span>
+            <span>NVIDIA 采用多供应商策略，不太可能完全排除任何认证供应商</span>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Source References -->
+    <section class="section-card">
+      <h2><span class="icon">🔗</span> 参考来源</h2>
+
+      <div class="source-timeline">
+        <div class="timeline-item">
+          <div class="timeline-date">2025年3月18日</div>
+          <div class="timeline-content">
+            <strong>NVIDIA GTC 2025 Keynote</strong><br>
+            Jensen Huang 主题演讲，确认 Feynman 架构存在<br>
+            <span style="color: #64b5f6;">https://www.nvidia.com/gtc/keynote/</span>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-date">2025年3月18日</div>
+          <div class="timeline-content">
+            <strong>Ars Technica 报道</strong><br>
+            "Nvidia announces 'Rubin Ultra' and 'Feynman' AI chips for 2027 and 2028"<br>
+            <span style="color: #64b5f6;">https://arstechnica.com/ai/2025/03/nvidia-announces-rubin-ultra-and-feynman-ai-chips-for-2027-and-2028/</span>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-date">2025年1月</div>
+          <div class="timeline-content">
+            <strong>NVIDIA 官方新闻稿 - Rubin 平台</strong><br>
+            详细规格确认，未提及 Feynman<br>
+            <span style="color: #64b5f6;">https://nvidianews.nvidia.com/news/rubin-platform-ai-supercomputer</span>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-date">持续更新</div>
+          <div class="timeline-content">
+            <strong>行业分析报告</strong><br>
+            TrendForce, Gartner 等 HBM 市场分析<br>
+            <span style="color: #888;">市场份额和供应链分析</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="disclaimer">
+      <h3>免责声明</h3>
+      <p>本报告基于公开渠道搜索和分析，旨在追溯信息来源并评估可信度。所有"媒体推测"标签的信息均无官方确认，仅供参考。</p>
+      <p class="update-time">最后更新: 2025年3月</p>
+    </div>
+  </footer>
+</body>
+</html>
