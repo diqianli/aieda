@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GTC 2026 深度泄露信息汇总</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/wordcloud@1.2.2/src/wordcloud2.min.js"></script>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-content">
+      <div class="logo">
+        <span class="nvidia-icon">◈</span>
+        <h1>GTC 2026 深度泄露信息汇总</h1>
+      </div>
+      <div class="header-badges">
+        <span class="badge badge-official">基于30+次深度搜索</span>
+        <span class="badge badge-reddit">Reddit</span>
+        <span class="badge badge-twitter">Twitter/X</span>
+        <span class="badge badge-forum">技术论坛</span>
+      </div>
+      <div class="event-info">
+        <span class="date">2026年3月16-19日</span>
+        <span class="location">San Jose, CA</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation -->
+  <nav class="nav-bar">
+    <a href="#wordcloud-section">关键词云</a>
+    <a href="#timeline-section">时间线</a>
+    <a href="#products-section">产品详情</a>
+    <a href="#ai-inference-section">AI推理算力</a>
+    <a href="#automotive-section">汽车AI芯片</a>
+    <a href="#drive-thor-section">DRIVE Thor</a>
+    <a href="#hyperion-section">Hyperion 10</a>
+    <a href="#alpamayo-section">Alpamayo AI</a>
+    <a href="#nvidia-groq-section">NVIDIA-Groq交易</a>
+    <a href="#groq-section">Groq vs H100</a>
+    <a href="#cloud-pricing-section">云端定价</a>
+    <a href="#rtx5090-section">RTX 5090</a>
+    <a href="#rubin-section">Rubin对比</a>
+    <a href="#mystery-section">神秘芯片</a>
+    <a href="#chan-section">4chan传闻</a>
+    <a href="#credibility-section">可信度标准</a>
+  </nav>
+
+  <!-- Hero Section with Word Cloud -->
+  <section id="wordcloud-section" class="hero">
+    <div class="hero-content">
+      <h2>关键词云</h2>
+      <p class="subtitle">基于Reddit、Twitter/X、4chan、技术论坛等30+次搜索的泄露信息关键词分析</p>
+      <div id="wordcloud" class="wordcloud-container"></div>
+      <div class="cloud-legend">
+        <span class="legend-item high">高权重(核心产品)</span>
+        <span class="legend-item mid">中权重(技术特性)</span>
+        <span class="legend-item low">低权重(传闻)</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Discussion Heat Section -->
+  <section class="heat-section">
+    <h2>社区讨论热度</h2>
+    <p class="section-desc">各产品在Reddit、Twitter/X、技术论坛的讨论热度指标</p>
+    <div class="heat-grid" id="heat-grid"></div>
+  </section>
+
+  <!-- Timeline Section -->
+  <section id="timeline-section" class="timeline-section">
+    <h2>产品发布时间线</h2>
+    <div class="timeline-legend">
+      <span class="tl-item official">● 官方确认</span>
+      <span class="tl-item rumor">● 高可信传闻</span>
+      <span class="tl-item speculation">● 推测</span>
+    </div>
+    <div class="timeline" id="timeline"></div>
+  </section>
+
+  <!-- Products Section -->
+  <section id="products-section" class="products-section">
+    <h2>产品详细信息</h2>
+    <div class="filter-bar">
+      <button class="filter-btn active" data-filter="all">全部</button>
+      <button class="filter-btn" data-filter="official">官方确认</button>
+      <button class="filter-btn" data-filter="high">高可信度</button>
+      <button class="filter-btn" data-filter="rumor">传闻</button>
+      <button class="filter-btn" data-filter="source-reddit">Reddit来源</button>
+      <button class="filter-btn" data-filter="source-chan">含4chan</button>
+    </div>
+    <div class="products-grid" id="products-grid"></div>
+  </section>
+
+  <!-- RTX 5090 Deep Analysis -->
+  <section id="rtx5090-section" class="deep-analysis-section">
+    <div class="section-header">
+      <h2>🎮 RTX 5090 深度分析</h2>
+      <div class="section-badges">
+        <span class="badge badge-reddit">r/nvidia</span>
+        <span class="badge badge-reddit">r/pcmasterrace</span>
+        <span class="badge badge-chan">4chan</span>
+        <span class="badge badge-media">Overclock3D</span>
+      </div>
+    </div>
+    <p class="section-desc">基于Reddit深度讨论和4chan匿名消息的综合分析</p>
+    <div class="analysis-content" id="rtx5090-analysis"></div>
+  </section>
+
+  <!-- N1X ARM Laptop -->
+  <section id="n1x-section" class="deep-analysis-section">
+    <div class="section-header">
+      <h2>💻 N1/N1X ARM笔记本芯片</h2>
+      <div class="section-badges">
+        <span class="badge badge-reddit">r/hardware</span>
+        <span class="badge badge-reddit">r/nvidia</span>
+        <span class="badge badge-reddit">r/laptops</span>
+        <span class="badge badge-media">VideoCardz</span>
+      </div>
+    </div>
+    <p class="section-desc">NVIDIA进军Windows on ARM游戏笔记本市场</p>
+    <div class="analysis-content" id="n1x-analysis"></div>
+  </section>
+
+  <!-- Rubin vs Blackwell Comparison -->
+  <section id="rubin-section" class="comparison-section">
+    <div class="section-header">
+      <h2>💎 Rubin vs Blackwell 技术对比</h2>
+      <div class="section-badges">
+        <span class="badge badge-reddit">r/nvidia</span>
+        <span class="badge badge-reddit">r/hardware</span>
+        <span class="badge badge-official">NVIDIA官方</span>
+      </div>
+    </div>
+    <p class="section-desc">来自Reddit r/nvidia的详细规格对比分析</p>
+    <div class="comparison-table" id="rubin-comparison"></div>
+  </section>
+
+  <!-- Mystery Chip -->
+  <section id="mystery-section" class="mystery-section">
+    <div class="section-header">
+      <h2>🔮 "震惊世界"的神秘芯片</h2>
+      <div class="section-badges">
+        <span class="badge badge-official">Jensen Huang确认</span>
+        <span class="badge badge-media">Tom's Guide</span>
+        <span class="badge badge-media">The Verge</span>
+      </div>
+    </div>
+    <p class="section-desc">GTC 2026 Keynote将展示一款"震惊世界"的神秘芯片</p>
+    <div class="mystery-content" id="mystery-content"></div>
+  </section>
+
+  <!-- HBM4 Supply Chain -->
+  <section class="supply-section">
+    <div class="section-header">
+      <h2>📦 HBM4 供应链分析</h2>
+      <div class="section-badges">
+        <span class="badge badge-media">Yahoo Finance</span>
+        <span class="badge badge-media">TweakTown</span>
+        <span class="badge badge-forum">Igor's Lab</span>
+      </div>
+    </div>
+    <p class="section-desc">HBM4内存供应链关键问题与风险分析</p>
+    <div class="supply-content" id="supply-content"></div>
+  </section>
+
+  <!-- Feynman Architecture -->
+  <section class="feynman-section">
+    <div class="section-header">
+      <h2>🚀 Feynman架构 (2028)</h2>
+      <div class="section-badges">
+        <span class="badge badge-media">DigiTimes</span>
+        <span class="badge badge-forum">Chiphell</span>
+        <span class="badge badge-forum">SemiWiki</span>
+        <span class="badge badge-media">SemiAnalysis</span>
+      </div>
+    </div>
+    <p class="section-desc">下一代GPU架构，采用TSMC A16制程和3D堆叠技术</p>
+    <div class="feynman-content" id="feynman-content"></div>
+  </section>
+
+  <!-- AI Inference Power Section -->
+  <section id="ai-inference-section" class="ai-inference-section">
+    <div class="section-header">
+      <h2>🚀 AI推理算力专区</h2>
+      <span class="badge badge-hot">🔥 重大发现</span>
+    </div>
+    <p class="section-desc">基于100+次搜索的AI推理芯片深度分析</p>
+    <div class="inference-grid" id="inference-grid"></div>
+  </section>
+
+  <!-- Automotive AI Chips Section -->
+  <section id="automotive-section" class="automotive-section">
+    <div class="section-header">
+      <h2>🚗 汽车 AI 芯片专区</h2>
+      <div class="section-badges">
+        <span class="badge badge-official">DRIVE Thor</span>
+        <span class="badge badge-hot">L4 自动驾驶</span>
+        <span class="badge badge-media">2026量产</span>
+      </div>
+    </div>
+    <p class="section-desc">NVIDIA DRIVE Thor 及汽车自动驾驶芯片深度分析</p>
+    <div class="automotive-content" id="automotive-content"></div>
+  </section>
+
+  <!-- DRIVE Thor Specs Section -->
+  <section id="drive-thor-section" class="deep-analysis-section">
+    <div class="section-header">
+      <h2>🏎️ DRIVE Thor 规格</h2>
+      <div class="section-badges">
+        <span class="badge badge-official">NVIDIA官方</span>
+        <span class="badge badge-reddit">r/nvidia</span>
+        <span class="badge badge-media">TechCrunch</span>
+      </div>
+    </div>
+    <p class="section-desc">下一代车载自动驾驶芯片，支持 L4/L5 自动驾驶</p>
+    <div class="analysis-content" id="drive-thor-analysis"></div>
+  </section>
+
+  <!-- DRIVE Hyperion 10 Section -->
+  <section id="hyperion-section" class="deep-analysis-section">
+    <div class="section-header">
+      <h2>🚙 DRIVE Hyperion 10 平台</h2>
+      <div class="section-badges">
+        <span class="badge badge-official">Level 4 就绪</span>
+        <span class="badge badge-media">Hesai合作</span>
+      </div>
+    </div>
+    <p class="section-desc">双 Thor SoC，14摄像头+9雷达+1激光雷达完整传感器套件</p>
+    <div class="analysis-content" id="hyperion-analysis"></div>
+  </section>
+
+  <!-- Alpamayo AI Section -->
+  <section id="alpamayo-section" class="deep-analysis-section">
+    <div class="section-header">
+      <h2>🧠 Alpamayo AI 模型</h2>
+      <div class="section-badges">
+        <span class="badge badge-official">CES 2026 发布</span>
+        <span class="badge badge-hot">推理式自动驾驶</span>
+      </div>
+    </div>
+    <p class="section-desc">世界首个车辆推理 AI 系统，开源自动驾驶模型家族</p>
+    <div class="analysis-content" id="alpamayo-analysis"></div>
+  </section>
+
+  <!-- WeRide GXR Section -->
+  <section id="weride-section" class="deep-analysis-section">
+    <div class="section-header">
+      <h2>🚕 WeRide Robotaxi GXR</h2>
+      <div class="section-badges">
+        <span class="badge badge-hot">全球首发</span>
+        <span class="badge badge-official">量产 L4</span>
+      </div>
+    </div>
+    <p class="section-desc">全球首个量产级 L4 自动驾驶车辆搭载 DRIVE Thor</p>
+    <div class="analysis-content" id="weride-analysis"></div>
+  </section>
+
+  <!-- Automaker Partners Section -->
+  <section id="partners-section" class="partners-section">
+    <div class="section-header">
+      <h2>🤝 汽车制造商合作伙伴</h2>
+      <span class="badge badge-official">理想/小米/比亚迪</span>
+    </div>
+    <p class="section-desc">中国及全球车企 NVIDIA 合作伙伴一览</p>
+    <div class="partners-grid" id="partners-grid"></div>
+  </section>
+
+  <!-- NVIDIA-Groq Deal Section -->
+  <section id="nvidia-groq-section" class="deal-section">
+    <div class="section-header">
+      <h2>💰 NVIDIA-Groq 重大交易</h2>
+      <span class="deal-value">~$200亿</span>
+    </div>
+    <p class="section-desc">NVIDIA历史上最大规模的技术许可交易 (2024年12月)</p>
+    <div class="deal-content" id="deal-content"></div>
+  </section>
+
+  <!-- Groq LPU Section -->
+  <section id="groq-section" class="groq-section">
+    <div class="section-header">
+      <h2>⚡ Groq LPU vs NVIDIA H100</h2>
+      <div class="section-badges">
+        <span class="badge badge-hot">10x性能差距</span>
+        <span class="badge badge-media">90%可信度</span>
+      </div>
+    </div>
+    <p class="section-desc">AI推理性能直接对比分析</p>
+    <div class="comparison-table" id="groq-comparison"></div>
+  </section>
+
+  <!-- Cloud GPU Pricing Section -->
+  <section id="cloud-pricing-section" class="cloud-section">
+    <div class="section-header">
+      <h2>☁️ 云端GPU定价</h2>
+      <span class="update-time">2025年3月更新</span>
+    </div>
+    <p class="section-desc">AWS/Azure/Google Cloud/Oracle GPU实例定价对比</p>
+    <div class="cloud-grid" id="cloud-grid"></div>
+  </section>
+
+  <!-- 4chan Rumors Section -->
+  <section id="chan-section" class="chan-section">
+    <div class="section-header">
+      <h2>⚠️ 4chan传闻汇总</h2>
+      <span class="warning-badge">低可信度 · 匿名来源</span>
+    </div>
+    <p class="section-desc warning-text">以下信息来自4chan匿名讨论，可信度较低，请谨慎参考</p>
+    <div class="chan-grid" id="chan-grid"></div>
+  </section>
+
+  <!-- Other Rumors -->
+  <section class="rumors-section">
+    <h2>其他重要传闻</h2>
+    <p class="section-desc">来自技术社区和媒体的额外信息</p>
+    <div class="rumors-grid" id="rumors-grid"></div>
+  </section>
+
+  <!-- Cross-Validation Section -->
+  <section class="validation-section">
+    <h2>交叉验证信息</h2>
+    <p class="section-desc">被多个独立来源确认的信息</p>
+    <div class="validation-grid" id="validation-grid"></div>
+  </section>
+
+  <!-- Known Leakers -->
+  <section class="leakers-section">
+    <h2>知名泄露者档案</h2>
+    <p class="section-desc">跟踪记录良好的技术信息泄露者</p>
+    <div class="leakers-grid" id="leakers-grid"></div>
+  </section>
+
+  <!-- Credibility Guide -->
+  <section id="credibility-section" class="credibility-section">
+    <h2>可信度评估标准</h2>
+    <div class="credibility-guide" id="credibility-guide"></div>
+  </section>
+
+  <!-- Source Types -->
+  <section class="source-types-section">
+    <h2>来源类型说明</h2>
+    <div class="source-types-grid" id="source-types-grid"></div>
+  </section>
+
+  <!-- Event Info -->
+  <section class="event-section">
+    <h2>GTC 2026 大会信息</h2>
+    <div class="event-card">
+      <div class="event-detail">
+        <span class="label">日期</span>
+        <span class="value">2026年3月16-19日</span>
+      </div>
+      <div class="event-detail">
+        <span class="label">地点</span>
+        <span class="value">San Jose, CA</span>
+      </div>
+      <div class="event-detail">
+        <span class="label">Keynote</span>
+        <span class="value">Jensen Huang, 3月16日</span>
+      </div>
+      <div class="event-themes">
+        <span class="label">主题</span>
+        <div class="themes-list">
+          <span class="theme-tag">Physical AI</span>
+          <span class="theme-tag">Agentic AI</span>
+          <span class="theme-tag">Inference</span>
+          <span class="theme-tag">AI Factories</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="disclaimer">
+      <h3>免责声明</h3>
+      <p>本页面汇总的信息来源于互联网公开渠道，包括Reddit、Twitter/X、4chan、技术论坛和科技媒体。所有信息均未经NVIDIA官方确认（标注官方的除外），仅供参考。可信度评估基于信息来源的可靠性和交叉验证程度，不构成任何投资或购买建议。</p>
+      <p class="warning-text">特别提醒：4chan等匿名来源的信息可信度极低，请勿作为决策依据。</p>
+      <p class="update-time">数据来源: 30+次网络搜索 | 最后更新: 2025年3月</p>
+    </div>
+    <div class="sources">
+      <h4>主要信息来源</h4>
+      <div class="source-categories">
+        <div class="source-category">
+          <h5>官方</h5>
+          <div class="source-links">
+            <a href="https://www.nvidia.com/gtc/" target="_blank" rel="noopener">NVIDIA GTC官网</a>
+          </div>
+        </div>
+        <div class="source-category">
+          <h5>Reddit</h5>
+          <div class="source-links">
+            <a href="https://www.reddit.com/r/nvidia/" target="_blank" rel="noopener">r/nvidia</a>
+            <a href="https://www.reddit.com/r/hardware/" target="_blank" rel="noopener">r/hardware</a>
+            <a href="https://www.reddit.com/r/pcmasterrace/" target="_blank" rel="noopener">r/pcmasterrace</a>
+          </div>
+        </div>
+        <div class="source-category">
+          <h5>科技媒体</h5>
+          <div class="source-links">
+            <a href="https://www.tomshardware.com/" target="_blank" rel="noopener">Tom's Hardware</a>
+            <a href="https://videocardz.com/" target="_blank" rel="noopener">VideoCardz</a>
+            <a href="https://wccftech.com/" target="_blank" rel="noopener">Wccftech</a>
+            <a href="https://semianalysis.com/" target="_blank" rel="noopener">SemiAnalysis</a>
+          </div>
+        </div>
+        <div class="source-category">
+          <h5>技术论坛</h5>
+          <div class="source-links">
+            <a href="https://www.chiphell.com/" target="_blank" rel="noopener">Chiphell</a>
+            <a href="https://semiwiki.com/" target="_blank" rel="noopener">SemiWiki</a>
+            <a href="https://overclock.net/" target="_blank" rel="noopener">Overclock.net</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="sources.js"></script>
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
