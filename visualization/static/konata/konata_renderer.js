@@ -186,6 +186,7 @@ class KonataRenderer {
      * Create an adapter object that mimics Op class from raw data
      */
     createOpAdapter(data) {
+        console.log('createOpAdapter: id=', data.id, 'src_regs=', data.src_regs, 'dst_regs=', data.dst_regs);
         const op = {
             id: data.id,
             gid: data.gid,
@@ -263,6 +264,7 @@ class KonataRenderer {
         op.formatRegs = function() {
             const src = (this.srcRegs || []).map(r => 'X' + r).join(', ');
             const dst = (this.dstRegs || []).map(r => 'X' + r).join(', ');
+            console.log('formatRegs: id=', this.id, 'srcRegs=', this.srcRegs, 'dstRegs=', this.dstRegs, 'src=', src, 'dst=', dst);
             return { src: src || '-', dst: dst || '-' };
         };
 
