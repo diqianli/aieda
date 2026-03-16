@@ -1,16 +1,13 @@
 {
   "name": "visualization",
   "version": "1.0.0",
-  "description": "",
+  "description": "ARM CPU Emulator Visualization",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "echo 'Start server from Rust backend'"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
-  "devDependencies": {
-    "playwright": "^1.58.2"
-  }
+  "type": "commonjs"
 }
