@@ -1122,13 +1122,12 @@ class KonataRenderer {
             const opY = index * layout.rowHeight;
             this.scrollY = Math.max(0, opY - this.height / 2 + layout.rowHeight);
 
-            // Ensure start cycle is visible
-            const startX = layout.cycleToX(op.fetchedCycle);
-            if (startX < this.config.labelWidth) {
-                this.scrollX = 0;
-                this.cycleOffset = op.fetchedCycle;
-                this.needsLayout = true;
-            }
+            // Always align the instruction's earliest cycle to the left edge of timeline
+            // This ensures the selected instruction's pipeline stages are visible
+            const earliestCycle = op.earliestCycle || op.fetchedCycle;
+            this.scrollX = 0;
+            this.cycleOffset = earliestCycle;
+            this.needsLayout = true;
         }
     }
 

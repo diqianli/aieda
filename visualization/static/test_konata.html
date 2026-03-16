@@ -36,20 +36,20 @@
         log('Op defined: ' + (typeof Op !== 'undefined'));
         log('Stage defined: ' + (typeof Stage !== 'undefined'));
 
-        // Create renderer
+        // Create renderer - make it global for testing
         const container = document.getElementById('container');
-        let renderer = null;
+        window.renderer = null;
 
         try {
-            renderer = new KonataRenderer(container);
+            window.renderer = new KonataRenderer(container);
             log('Renderer created successfully');
-            log('Canvas size: ' + renderer.width + ' x ' + renderer.height);
+            log('Canvas size: ' + window.renderer.width + ' x ' + window.renderer.height);
         } catch (e) {
             log('Error creating renderer: ' + e.message);
         }
 
         function loadTestData() {
-            if (!renderer) {
+            if (!window.renderer) {
                 log('Renderer not available');
                 return;
             }
@@ -86,25 +86,25 @@
                     src_regs: [i % 30],
                     dst_regs: [(i + 1) % 30],
                     is_memory: i % 5 === 3 || i % 5 === 4,
-                    mem_addr: i % 5 === 3 ? 0x2000 + i * 8 : null
+                    mem_addr: i % 5 === 3 ? 0x2000 + i * 8 : (i % 5 === 4 ? 0x3000 + i * 8 : null)
                 });
             }
 
             log('Loading ' + testData.ops.length + ' test ops');
-            renderer.updateSnapshot(testData);
+            window.renderer.updateSnapshot(testData);
             log('Data loaded');
         }
 
         function zoomIn() {
-            if (renderer) renderer.zoomIn();
+            if (window.renderer) window.renderer.zoomIn();
         }
 
         function zoomOut() {
-            if (renderer) renderer.zoomOut();
+            if (window.renderer) window.renderer.zoomOut();
         }
 
         function resetView() {
-            if (renderer) renderer.resetView();
+            if (window.renderer) window.renderer.resetView();
         }
 
         // Auto-load test data after a short delay
