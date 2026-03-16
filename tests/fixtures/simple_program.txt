@@ -1,0 +1,11 @@
+# Simple program trace for testing
+# Format: PC OPCODE_TYPE [src=X:n,n] [dst=X:n] [addr=0xnn] [br=0xnn] [TAKEN/NOT_TAKEN]
+
+0x1000 ADD src=X:0,1 dst=X:2
+0x1004 ADD src=X:2,3 dst=X:4
+0x1008 LOAD dst=X:5 addr=0x2000
+0x100C STORE src=X:5 addr=0x2008
+0x1010 BRANCH br=0x1000 TAKEN
+0x1014 NOP
+0x1018 MUL src=X:0,1 dst=X:6
+0x101C SUB src=X:6,2 dst=X:7
