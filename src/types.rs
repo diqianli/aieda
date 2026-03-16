@@ -77,11 +77,74 @@ pub enum OpcodeType {
     Mrs,
     Sys,
     Nop,
-    // SIMD/FP
+    // SIMD/FP (existing)
     Fadd,
     Fsub,
     Fmul,
     Fdiv,
+
+    // === Cache Maintenance Instructions ===
+    /// Data Cache Zero by VA
+    DcZva,
+    /// Data Cache Clean by VA to PoC
+    DcCivac,
+    /// Data Cache Clean by VA
+    DcCvac,
+    /// Data Cache Clean by Set/Way
+    DcCsw,
+    /// Instruction Cache Invalidate by VA to PoU
+    IcIvau,
+    /// Instruction Cache Invalidate All to PoU
+    IcIallu,
+    /// Instruction Cache Invalidate All to PoU (Inner Shareable)
+    IcIalluis,
+
+    // === Cryptography Extensions ===
+    /// AES Decrypt
+    Aesd,
+    /// AES Encrypt
+    Aese,
+    /// AES Inverse Mix Columns
+    Aesimc,
+    /// AES Mix Columns
+    Aesmc,
+    /// SHA-1 Hash (part 1)
+    Sha1H,
+    /// SHA-256 Hash
+    Sha256H,
+    /// SHA-512 Hash
+    Sha512H,
+
+    // === SIMD/Vector (NEON) ===
+    /// Vector Add
+    Vadd,
+    /// Vector Subtract
+    Vsub,
+    /// Vector Multiply
+    Vmul,
+    /// Vector Multiply-Accumulate
+    Vmla,
+    /// Vector Multiply-Subtract
+    Vmls,
+    /// Vector Load
+    Vld,
+    /// Vector Store
+    Vst,
+    /// Vector Duplicate
+    Vdup,
+    /// Vector Move
+    Vmov,
+
+    // === Floating-point FMA ===
+    /// Floating-point Fused Multiply-Add
+    Fmadd,
+    /// Floating-point Fused Multiply-Subtract
+    Fmsub,
+    /// Floating-point Negated Fused Multiply-Add
+    Fnmadd,
+    /// Floating-point Negated Fused Multiply-Subtract
+    Fnmsub,
+
     // Other
     Other,
 }
@@ -89,7 +152,11 @@ pub enum OpcodeType {
 impl OpcodeType {
     /// Returns true if this is a memory operation
     pub fn is_memory_op(&self) -> bool {
-        matches!(self, Self::Load | Self::Store | Self::LoadPair | Self::StorePair)
+        matches!(
+            self,
+            Self::Load | Self::Store | Self::LoadPair | Self::StorePair |
+            Self::Vld | Self::Vst  // Vector load/store are also memory operations
+        )
     }
 
     /// Returns true if this is a branch instruction
@@ -104,17 +171,81 @@ impl OpcodeType {
             Self::Add | Self::Sub | Self::Mul | Self::Div |
             Self::And | Self::Orr | Self::Eor |
             Self::Lsl | Self::Lsr | Self::Asr |
-            Self::Fadd | Self::Fsub | Self::Fmul | Self::Fdiv
+            Self::Fadd | Self::Fsub | Self::Fmul | Self::Fdiv |
+            // New SIMD/vector instructions
+            Self::Vadd | Self::Vsub | Self::Vmul | Self::Vmla | Self::Vmls |
+            // New FMA instructions
+            Self::Fmadd | Self::Fmsub | Self::Fnmadd | Self::Fnmsub |
+            // New crypto instructions
+            Self::Aesd | Self::Aese | Self::Aesimc | Self::Aesmc |
+            Self::Sha1H | Self::Sha256H | Self::Sha512H
+        )
+    }
+
+    /// Returns true if this is a cache maintenance instruction
+    pub fn is_cache_maintenance(&self) -> bool {
+        matches!(
+            self,
+            Self::DcZva | Self::DcCivac | Self::DcCvac | Self::DcCsw |
+            Self::IcIvau | Self::IcIallu | Self::IcIalluis
+        )
+    }
+
+    /// Returns true if this is a cryptography instruction
+    pub fn is_crypto(&self) -> bool {
+        matches!(
+            self,
+            Self::Aesd | Self::Aese | Self::Aesimc | Self::Aesmc |
+            Self::Sha1H | Self::Sha256H | Self::Sha512H
+        )
+    }
+
+    /// Returns true if this is a SIMD/vector instruction
+    pub fn is_simd(&self) -> bool {
+        matches!(
+            self,
+            Self::Vadd | Self::Vsub | Self::Vmul | Self::Vmla | Self::Vmls |
+            Self::Vld | Self::Vst | Self::Vdup | Self::Vmov
+        )
+    }
+
+    /// Returns true if this is an FMA (Fused Multiply-Add) instruction
+    pub fn is_fma(&self) -> bool {
+        matches!(
+            self,
+            Self::Fmadd | Self::Fmsub | Self::Fnmadd | Self::Fnmsub
         )
     }
 
     /// Returns the execution latency in cycles (simplified model)
     pub fn latency(&self) -> u64 {
         match self {
+            // Existing instructions
             Self::Mul | Self::Div => 3,
             Self::Fadd | Self::Fsub => 2,
             Self::Fmul => 3,
             Self::Fdiv => 8,
+
+            // Cache maintenance instructions (typically slow, involve cache operations)
+            Self::DcZva | Self::DcCivac | Self::DcCvac => 20,
+            Self::DcCsw => 30,
+            Self::IcIvau | Self::IcIallu | Self::IcIalluis => 15,
+
+            // Cryptography instructions (AES/SHA operations)
+            Self::Aesd | Self::Aese | Self::Aesimc | Self::Aesmc => 4,
+            Self::Sha1H => 10,
+            Self::Sha256H => 12,
+            Self::Sha512H => 16,
+
+            // SIMD/Vector instructions
+            Self::Vadd | Self::Vsub => 2,
+            Self::Vmul | Self::Vmla | Self::Vmls => 4,
+            Self::Vld | Self::Vst => 3,  // Vector load/store
+            Self::Vdup | Self::Vmov => 1,
+
+            // FMA instructions
+            Self::Fmadd | Self::Fmsub | Self::Fnmadd | Self::Fnmsub => 4,
+
             _ => 1,
         }
     }

@@ -100,7 +100,7 @@ impl ChampSimTraceParser {
 
     /// Convert ChampSim instruction to our Instruction type
     fn convert_instruction(&mut self, cs_instr: ChampSimInstr) -> Instruction {
-        // Determine opcode type
+        // Determine opcode type based on instruction characteristics
         let opcode_type = if cs_instr.is_branch {
             OpcodeType::Branch
         } else if cs_instr.has_memory_access() {
@@ -110,7 +110,28 @@ impl ChampSimTraceParser {
                 OpcodeType::Load
             }
         } else {
-            OpcodeType::Other
+            // Infer instruction type from register usage patterns
+            let src_count = cs_instr.source_registers.iter().filter(|&&r| r != 0).count();
+            let dst_count = cs_instr.destination_registers.iter().filter(|&&r| r != 0).count();
+
+            match (src_count, dst_count) {
+                // No destination register - likely a comparison or test (use Sub as proxy)
+                (1..=4, 0) => OpcodeType::Sub,
+                // One source, one destination - could be MOV or unary op (use Add as proxy)
+                (1, 1) => OpcodeType::Add,
+                // Two sources, one destination - typical ALU op (ADD, SUB, AND, OR, etc.)
+                (2, 1) => OpcodeType::Add,
+                // Three sources, one destination - could be MUL or FMA
+                (3, 1) => OpcodeType::Mul,
+                // Four sources, one destination - complex op
+                (4, 1) => OpcodeType::Mul,
+                // Default to Add for compute instructions with destination
+                (_, 1) => OpcodeType::Add,
+                // Multiple destinations - likely SIMD or pair operations
+                (_, 2) => OpcodeType::LoadPair,
+                // Fallback
+                _ => OpcodeType::Other,
+            }
         };
 
         let mut instr = Instruction::new(

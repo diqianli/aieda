@@ -49,6 +49,11 @@ class PipelineView {
                         <button id="pv-reset-view" class="btn btn-sm" title="Reset View">&#8634;</button>
                     </div>
                     <div class="control-group">
+                        <span class="control-label">Label:</span>
+                        <button id="pv-label-widen" class="btn btn-sm" title="Widen Labels">&#9664;</button>
+                        <button id="pv-label-narrow" class="btn btn-sm" title="Narrow Labels">&#9654;</button>
+                    </div>
+                    <div class="control-group">
                         <input type="text" id="pv-search" class="search-input" placeholder="Search instructions...">
                         <button id="pv-search-prev" class="btn btn-sm" title="Previous">&#9650;</button>
                         <button id="pv-search-next" class="btn btn-sm" title="Next">&#9660;</button>
@@ -127,6 +132,15 @@ class PipelineView {
 
         document.getElementById('pv-reset-view').addEventListener('click', () => {
             if (this.renderer) this.renderer.resetView();
+        });
+
+        // Label width controls
+        document.getElementById('pv-label-widen').addEventListener('click', () => {
+            if (this.renderer && this.renderer.increaseLabelWidth) this.renderer.increaseLabelWidth();
+        });
+
+        document.getElementById('pv-label-narrow').addEventListener('click', () => {
+            if (this.renderer && this.renderer.decreaseLabelWidth) this.renderer.decreaseLabelWidth();
         });
 
         // Search

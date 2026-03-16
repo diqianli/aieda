@@ -28,6 +28,10 @@ pub struct TraceEntry {
     pub exec_latency: Option<u64>,
     /// Memory address (if applicable)
     pub mem_addr: Option<u64>,
+    /// Source registers
+    pub src_regs: Vec<u16>,
+    /// Destination registers
+    pub dst_regs: Vec<u16>,
 }
 
 impl TraceEntry {
@@ -44,6 +48,8 @@ impl TraceEntry {
             commit_cycle: None,
             exec_latency: None,
             mem_addr: None,
+            src_regs: Vec::new(),
+            dst_regs: Vec::new(),
         }
     }
 
@@ -52,6 +58,8 @@ impl TraceEntry {
         let mut entry = Self::new(instr.id.0, instr.pc, instr.opcode_type);
         entry.disasm = instr.disasm.clone();
         entry.mem_addr = instr.mem_access.as_ref().map(|m| m.addr);
+        entry.src_regs = instr.src_regs.iter().map(|r| r.0 as u16).collect();
+        entry.dst_regs = instr.dst_regs.iter().map(|r| r.0 as u16).collect();
         entry
     }
 

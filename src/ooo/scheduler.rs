@@ -104,6 +104,10 @@ pub enum ExecutionUnit {
     Branch,
     /// FP/SIMD unit
     FpSimd,
+    /// System instructions unit
+    System,
+    /// Cryptography unit
+    Crypto,
 }
 
 impl ExecutionUnit {
@@ -112,21 +116,51 @@ impl ExecutionUnit {
         use crate::types::OpcodeType;
 
         match instr.opcode_type {
+            // ALU instructions
             OpcodeType::Add | OpcodeType::Sub |
             OpcodeType::And | OpcodeType::Orr | OpcodeType::Eor |
             OpcodeType::Lsl | OpcodeType::Lsr | OpcodeType::Asr |
             OpcodeType::Other => ExecutionUnit::IntAlu,
 
+            // Multiply/divide instructions
             OpcodeType::Mul | OpcodeType::Div => ExecutionUnit::IntMul,
 
+            // Load instructions
             OpcodeType::Load | OpcodeType::LoadPair => ExecutionUnit::Load,
 
+            // Store instructions
             OpcodeType::Store | OpcodeType::StorePair => ExecutionUnit::Store,
 
+            // Branch instructions
             OpcodeType::Branch | OpcodeType::BranchCond | OpcodeType::BranchReg => ExecutionUnit::Branch,
 
+            // Floating-point/SIMD instructions (existing)
             OpcodeType::Fadd | OpcodeType::Fsub | OpcodeType::Fmul | OpcodeType::Fdiv => ExecutionUnit::FpSimd,
 
+            // === New instructions ===
+            // Cache maintenance instructions - use System unit
+            OpcodeType::DcZva | OpcodeType::DcCivac | OpcodeType::DcCvac |
+            OpcodeType::DcCsw | OpcodeType::IcIvau | OpcodeType::IcIallu |
+            OpcodeType::IcIalluis => ExecutionUnit::System,
+
+            // Cryptography instructions - use dedicated Crypto unit
+            OpcodeType::Aesd | OpcodeType::Aese | OpcodeType::Aesimc | OpcodeType::Aesmc |
+            OpcodeType::Sha1H | OpcodeType::Sha256H | OpcodeType::Sha512H => ExecutionUnit::Crypto,
+
+            // SIMD/Vector instructions
+            OpcodeType::Vadd | OpcodeType::Vsub | OpcodeType::Vmul |
+            OpcodeType::Vmla | OpcodeType::Vmls |
+            OpcodeType::Vdup | OpcodeType::Vmov => ExecutionUnit::FpSimd,
+
+            // Vector load/store
+            OpcodeType::Vld => ExecutionUnit::Load,
+            OpcodeType::Vst => ExecutionUnit::Store,
+
+            // FMA instructions
+            OpcodeType::Fmadd | OpcodeType::Fmsub |
+            OpcodeType::Fnmadd | OpcodeType::Fnmsub => ExecutionUnit::FpSimd,
+
+            // System instructions
             OpcodeType::Msr | OpcodeType::Mrs | OpcodeType::Sys | OpcodeType::Nop => ExecutionUnit::IntAlu,
         }
     }
@@ -140,6 +174,8 @@ impl ExecutionUnit {
             ExecutionUnit::Store => 1,
             ExecutionUnit::Branch => 1,
             ExecutionUnit::FpSimd => 2,
+            ExecutionUnit::System => 1,
+            ExecutionUnit::Crypto => 1,
         }
     }
 }

@@ -14,7 +14,7 @@
 const DEFAULT_CONFIG = {
     // Layout
     rowHeight: 24,
-    labelWidth: 150,
+    labelWidth: 260,
     cycleWidth: 8,
     headerHeight: 30,
     timelineHeight: 40,
@@ -83,6 +83,25 @@ class KonataRenderer {
 
         // Bind event handlers
         this.bindEvents();
+
+        // Create tooltip element
+        this.tooltip = document.createElement('div');
+        this.tooltip.className = 'konata-tooltip';
+        this.tooltip.style.cssText = `
+            position: absolute;
+            background: rgba(0, 0, 0, 0.85);
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font: 11px monospace;
+            pointer-events: none;
+            z-index: 1000;
+            display: none;
+            white-space: nowrap;
+            border: 1px solid #444;
+        `;
+        container.style.position = 'relative';
+        container.appendChild(this.tooltip);
 
         // Initial resize
         this.resize();
@@ -177,8 +196,8 @@ class KonataRenderer {
             pc: data.pc,
             srcRegs: data.src_regs || data.srcRegs || [],
             dstRegs: data.dst_regs || data.dstRegs || [],
-            isMemory: data.is_memory || data.isMemory || false,
-            memAddr: data.mem_addr || data.memAddr,
+            isMemory: data.is_memory === true || data.isMemory === true,
+            memAddr: data.mem_addr !== undefined ? data.mem_addr : (data.memAddr !== undefined ? data.memAddr : null),
             lanes: new Map(),
             prods: (data.prods || []).map(d => ({
                 producerId: d.producer_id !== undefined ? d.producer_id : d.producerId,
@@ -239,6 +258,17 @@ class KonataRenderer {
 
         op.formatPC = function() {
             return '0x' + this.pc.toString(16).padStart(8, '0');
+        };
+
+        op.formatRegs = function() {
+            const src = (this.srcRegs || []).map(r => 'X' + r).join(', ');
+            const dst = (this.dstRegs || []).map(r => 'X' + r).join(', ');
+            return { src: src || '-', dst: dst || '-' };
+        };
+
+        op.formatMemAddr = function() {
+            if (this.isMemory !== true || this.memAddr === null || this.memAddr === undefined) return null;
+            return '0x' + this.memAddr.toString(16).padStart(8, '0');
         };
 
         return op;
@@ -500,14 +530,14 @@ class KonataRenderer {
             ctx.strokeStyle = this.config.gridColor;
             ctx.strokeRect(labelX, y, labelWidth, layout.rowHeight);
 
-            // Text
+            // Text: ID + PC + opcode + registers (single line)
             ctx.fillStyle = isSelected ? '#ffffff' : this.config.labelTextColor;
-            ctx.font = '11px monospace';
+            ctx.font = '10px monospace';
             ctx.textAlign = 'left';
             ctx.textBaseline = 'middle';
 
-            // Format label: ID + PC + opcode
-            const label = `[${op.id}] ${op.formatPC()} ${op.labelName.substring(0, 12)}`;
+            const regs = op.formatRegs();
+            const label = `[${op.id}] ${op.formatPC()} ${op.labelName.substring(0, 8)} d:${regs.dst} s:${regs.src}`;
             ctx.fillText(label, 5, y + layout.rowHeight / 2, labelWidth - 10);
         }
 
@@ -819,6 +849,7 @@ class KonataRenderer {
             this.scrollY = Math.max(0, this.lastScrollY - dy);
 
             this.render();
+            this.hideTooltip();
         } else {
             // Update hovered op
             const rect = this.canvas.getBoundingClientRect();
@@ -831,13 +862,43 @@ class KonataRenderer {
             const prevHovered = this.hoveredOp;
             if (opIndex >= 0 && opIndex < this.ops.length) {
                 this.hoveredOp = this.ops[opIndex];
+                // Show tooltip for memory operations
+                this.showTooltip(e, this.hoveredOp);
             } else {
                 this.hoveredOp = null;
+                this.hideTooltip();
             }
 
             if (prevHovered !== this.hoveredOp) {
                 this.render();
             }
+        }
+    }
+
+    showTooltip(e, op) {
+        if (!op || !this.tooltip) return;
+
+        // Get memory address if this is a memory operation
+        const memAddr = op.formatMemAddr();
+        if (!memAddr) {
+            this.hideTooltip();
+            return;
+        }
+
+        // Position tooltip
+        const rect = this.canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left + 15;
+        const y = e.clientY - rect.top - 15;
+
+        this.tooltip.style.left = x + 'px';
+        this.tooltip.style.top = y + 'px';
+        this.tooltip.style.display = 'block';
+        this.tooltip.textContent = `MEM: ${memAddr}`;
+    }
+
+    hideTooltip() {
+        if (this.tooltip) {
+            this.tooltip.style.display = 'none';
         }
     }
 
@@ -886,6 +947,9 @@ class KonataRenderer {
 
         if (opIndex >= 0 && opIndex < this.ops.length) {
             this.selectedOp = this.ops[opIndex];
+
+            // Align timeline to selected instruction
+            this.scrollToOp(this.selectedOp);
             this.render();
 
             // Emit selection event

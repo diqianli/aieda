@@ -198,6 +198,7 @@ impl BinaryTraceParser {
     /// Convert u32 to OpcodeType
     fn u32_to_opcode_type(v: u32) -> OpcodeType {
         match v {
+            // Computational
             0 => OpcodeType::Add,
             1 => OpcodeType::Sub,
             2 => OpcodeType::Mul,
@@ -208,21 +209,58 @@ impl BinaryTraceParser {
             7 => OpcodeType::Lsl,
             8 => OpcodeType::Lsr,
             9 => OpcodeType::Asr,
+            // Load/Store
             10 => OpcodeType::Load,
             11 => OpcodeType::Store,
             12 => OpcodeType::LoadPair,
             13 => OpcodeType::StorePair,
+            // Branch
             14 => OpcodeType::Branch,
             15 => OpcodeType::BranchCond,
             16 => OpcodeType::BranchReg,
+            // System
             17 => OpcodeType::Msr,
             18 => OpcodeType::Mrs,
             19 => OpcodeType::Sys,
             20 => OpcodeType::Nop,
+            // Floating-point
             21 => OpcodeType::Fadd,
             22 => OpcodeType::Fsub,
             23 => OpcodeType::Fmul,
             24 => OpcodeType::Fdiv,
+            // Cache Maintenance (25-31)
+            25 => OpcodeType::DcZva,
+            26 => OpcodeType::DcCivac,
+            27 => OpcodeType::DcCvac,
+            28 => OpcodeType::DcCsw,
+            29 => OpcodeType::IcIvau,
+            30 => OpcodeType::IcIallu,
+            31 => OpcodeType::IcIalluis,
+            // Cryptography (32-38)
+            32 => OpcodeType::Aesd,
+            33 => OpcodeType::Aese,
+            34 => OpcodeType::Aesimc,
+            35 => OpcodeType::Aesmc,
+            36 => OpcodeType::Sha1H,
+            37 => OpcodeType::Sha256H,
+            38 => OpcodeType::Sha512H,
+            // SIMD/Vector (39-47)
+            39 => OpcodeType::Vadd,
+            40 => OpcodeType::Vsub,
+            41 => OpcodeType::Vmul,
+            42 => OpcodeType::Vmla,
+            43 => OpcodeType::Vmls,
+            44 => OpcodeType::Vld,
+            45 => OpcodeType::Vst,
+            46 => OpcodeType::Vdup,
+            47 => OpcodeType::Vmov,
+            // FMA (48-51)
+            48 => OpcodeType::Fmadd,
+            49 => OpcodeType::Fmsub,
+            50 => OpcodeType::Fnmadd,
+            51 => OpcodeType::Fnmsub,
+            // Other
+            255 => OpcodeType::Other,
             _ => OpcodeType::Other,
         }
     }
@@ -325,6 +363,7 @@ impl BinaryTraceWriter {
 
     fn opcode_type_to_u32(opcode: &OpcodeType) -> u32 {
         match opcode {
+            // Computational
             OpcodeType::Add => 0,
             OpcodeType::Sub => 1,
             OpcodeType::Mul => 2,
@@ -335,21 +374,57 @@ impl BinaryTraceWriter {
             OpcodeType::Lsl => 7,
             OpcodeType::Lsr => 8,
             OpcodeType::Asr => 9,
+            // Load/Store
             OpcodeType::Load => 10,
             OpcodeType::Store => 11,
             OpcodeType::LoadPair => 12,
             OpcodeType::StorePair => 13,
+            // Branch
             OpcodeType::Branch => 14,
             OpcodeType::BranchCond => 15,
             OpcodeType::BranchReg => 16,
+            // System
             OpcodeType::Msr => 17,
             OpcodeType::Mrs => 18,
             OpcodeType::Sys => 19,
             OpcodeType::Nop => 20,
+            // Floating-point
             OpcodeType::Fadd => 21,
             OpcodeType::Fsub => 22,
             OpcodeType::Fmul => 23,
             OpcodeType::Fdiv => 24,
+            // Cache Maintenance (25-31)
+            OpcodeType::DcZva => 25,
+            OpcodeType::DcCivac => 26,
+            OpcodeType::DcCvac => 27,
+            OpcodeType::DcCsw => 28,
+            OpcodeType::IcIvau => 29,
+            OpcodeType::IcIallu => 30,
+            OpcodeType::IcIalluis => 31,
+            // Cryptography (32-38)
+            OpcodeType::Aesd => 32,
+            OpcodeType::Aese => 33,
+            OpcodeType::Aesimc => 34,
+            OpcodeType::Aesmc => 35,
+            OpcodeType::Sha1H => 36,
+            OpcodeType::Sha256H => 37,
+            OpcodeType::Sha512H => 38,
+            // SIMD/Vector (39-47)
+            OpcodeType::Vadd => 39,
+            OpcodeType::Vsub => 40,
+            OpcodeType::Vmul => 41,
+            OpcodeType::Vmla => 42,
+            OpcodeType::Vmls => 43,
+            OpcodeType::Vld => 44,
+            OpcodeType::Vst => 45,
+            OpcodeType::Vdup => 46,
+            OpcodeType::Vmov => 47,
+            // FMA (48-51)
+            OpcodeType::Fmadd => 48,
+            OpcodeType::Fmsub => 49,
+            OpcodeType::Fnmadd => 50,
+            OpcodeType::Fnmsub => 51,
+            // Other
             OpcodeType::Other => 255,
         }
     }

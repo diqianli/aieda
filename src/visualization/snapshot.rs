@@ -181,6 +181,7 @@ impl InstructionSnapshot {
 /// Convert opcode type to a human-readable string.
 fn opcode_to_string(opcode: OpcodeType) -> String {
     match opcode {
+        // Computational
         OpcodeType::Add => "ADD".to_string(),
         OpcodeType::Sub => "SUB".to_string(),
         OpcodeType::Mul => "MUL".to_string(),
@@ -191,21 +192,57 @@ fn opcode_to_string(opcode: OpcodeType) -> String {
         OpcodeType::Lsl => "LSL".to_string(),
         OpcodeType::Lsr => "LSR".to_string(),
         OpcodeType::Asr => "ASR".to_string(),
+        // Load/Store
         OpcodeType::Load => "LOAD".to_string(),
         OpcodeType::Store => "STORE".to_string(),
         OpcodeType::LoadPair => "LDP".to_string(),
         OpcodeType::StorePair => "STP".to_string(),
+        // Branch
         OpcodeType::Branch => "B".to_string(),
         OpcodeType::BranchCond => "B.cond".to_string(),
         OpcodeType::BranchReg => "BR".to_string(),
+        // System
         OpcodeType::Msr => "MSR".to_string(),
         OpcodeType::Mrs => "MRS".to_string(),
         OpcodeType::Sys => "SYS".to_string(),
         OpcodeType::Nop => "NOP".to_string(),
+        // Floating-point (existing)
         OpcodeType::Fadd => "FADD".to_string(),
         OpcodeType::Fsub => "FSUB".to_string(),
         OpcodeType::Fmul => "FMUL".to_string(),
         OpcodeType::Fdiv => "FDIV".to_string(),
+        // Cache Maintenance
+        OpcodeType::DcZva => "DC_ZVA".to_string(),
+        OpcodeType::DcCivac => "DC_CIVAC".to_string(),
+        OpcodeType::DcCvac => "DC_CVAC".to_string(),
+        OpcodeType::DcCsw => "DC_CSW".to_string(),
+        OpcodeType::IcIvau => "IC_IVAU".to_string(),
+        OpcodeType::IcIallu => "IC_IALLU".to_string(),
+        OpcodeType::IcIalluis => "IC_IALLUIS".to_string(),
+        // Cryptography
+        OpcodeType::Aesd => "AESD".to_string(),
+        OpcodeType::Aese => "AESE".to_string(),
+        OpcodeType::Aesimc => "AESIMC".to_string(),
+        OpcodeType::Aesmc => "AESMC".to_string(),
+        OpcodeType::Sha1H => "SHA1H".to_string(),
+        OpcodeType::Sha256H => "SHA256H".to_string(),
+        OpcodeType::Sha512H => "SHA512H".to_string(),
+        // SIMD/Vector
+        OpcodeType::Vadd => "VADD".to_string(),
+        OpcodeType::Vsub => "VSUB".to_string(),
+        OpcodeType::Vmul => "VMUL".to_string(),
+        OpcodeType::Vmla => "VMLA".to_string(),
+        OpcodeType::Vmls => "VMLS".to_string(),
+        OpcodeType::Vld => "VLD".to_string(),
+        OpcodeType::Vst => "VST".to_string(),
+        OpcodeType::Vdup => "VDUP".to_string(),
+        OpcodeType::Vmov => "VMOV".to_string(),
+        // FMA
+        OpcodeType::Fmadd => "FMADD".to_string(),
+        OpcodeType::Fmsub => "FMSUB".to_string(),
+        OpcodeType::Fnmadd => "FNMADD".to_string(),
+        OpcodeType::Fnmsub => "FNMSUB".to_string(),
+        // Other
         OpcodeType::Other => "OTHER".to_string(),
     }
 }

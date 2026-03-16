@@ -471,6 +471,11 @@ impl PipelineTracker {
         self.timings.get(&id)
     }
 
+    /// Get dependencies for a specific instruction.
+    pub fn get_dependencies(&self, id: InstructionId) -> Option<&Vec<KonataDependencyRef>> {
+        self.dependencies.get(&id)
+    }
+
     /// Get the retire counter.
     pub fn retire_count(&self) -> u64 {
         self.retire_counter
