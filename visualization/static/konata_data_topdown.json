@@ -1,0 +1,239 @@
+{
+  "version": "1.0",
+  "summary": {
+    "total_cycles": 100001,
+    "total_instructions": 100000,
+    "ipc": 0.999990000099999,
+    "issue_width": 6,
+    "window_size": 256
+  },
+  "topdown": {
+    "retiring_pct": 16.666500001666652,
+    "bad_speculation_pct": 56.66660666726666,
+    "frontend_bound_pct": 10.666893331066689,
+    "backend_bound_pct": 16.0
+  },
+  "frontend_bound": {
+    "fetch_latency_pct": 6.400135998640013,
+    "fetch_bandwidth_pct": 4.266757332426676,
+    "icache_miss_rate": 0.0,
+    "itlb_miss_rate": 0.0
+  },
+  "backend_bound": {
+    "memory_bound_pct": 11.2,
+    "core_bound_pct": 4.8,
+    "l1_dcache_miss_rate": 0.0,
+    "l2_cache_miss_rate": 100.0,
+    "l3_cache_miss_rate": 0.0,
+    "avg_mem_latency": 100.0
+  },
+  "bad_speculation": {
+    "branch_mispred_rate": 0.0,
+    "wasted_instructions_pct": 28.33330333363333
+  },
+  "retiring": {
+    "alu_ops_pct": 40.0,
+    "memory_ops_pct": 40.0,
+    "branch_ops_pct": 20.0,
+    "simd_ops_pct": 0.0
+  },
+  "stage_utilization": {
+    "fetch_util": 16.666666666666668,
+    "decode_util": 16.666666666666668,
+    "rename_util": 16.666666666666668,
+    "dispatch_util": 16.666666666666668,
+    "issue_util": 2512.4386666666664,
+    "execute_util": 16.666333333333334,
+    "memory_util": 326.6666666666667,
+    "commit_util": 0.0
+  },
+  "hotspots": [
+    {
+      "name": "PC_000203B8",
+      "start_pc": 132024,
+      "end_pc": 132028,
+      "instruction_count": 1,
+      "cycle_count": 257,
+      "cycle_pct": 0.25699743002569975,
+      "ipc": 0.0038910505836575876
+    },
+    {
+      "name": "PC_00019E28",
+      "start_pc": 106024,
+      "end_pc": 106028,
+      "instruction_count": 1,
+      "cycle_count": 257,
+      "cycle_pct": 0.25699743002569975,
+      "ipc": 0.0038910505836575876
+    },
+    {
+      "name": "PC_00003920",
+      "start_pc": 14624,
+      "end_pc": 14628,
+      "instruction_count": 1,
+      "cycle_count": 257,
+      "cycle_pct": 0.25699743002569975,
+      "ipc": 0.0038910505836575876
+    },
+    {
+      "name": "PC_0000F2D4",
+      "start_pc": 62164,
+      "end_pc": 62168,
+      "instruction_count": 1,
+      "cycle_count": 257,
+      "cycle_pct": 0.25699743002569975,
+      "ipc": 0.0038910505836575876
+    },
+    {
+      "name": "PC_000083BC",
+      "start_pc": 33724,
+      "end_pc": 33728,
+      "instruction_count": 1,
+      "cycle_count": 257,
+      "cycle_pct": 0.25699743002569975,
+      "ipc": 0.0038910505836575876
+    },
+    {
+      "name": "PC_00059488",
+      "start_pc": 365704,
+      "end_pc": 365708,
+      "instruction_count": 1,
+      "cycle_count": 257,
+      "cycle_pct": 0.25699743002569975,
+      "ipc": 0.0038910505836575876
+    },
+    {
+      "name": "PC_0001916C",
+      "start_pc": 102764,
+      "end_pc": 102768,
+      "instruction_count": 1,
+      "cycle_count": 257,
+      "cycle_pct": 0.25699743002569975,
+      "ipc": 0.0038910505836575876
+    },
+    {
+      "name": "PC_00033120",
+      "start_pc": 209184,
+      "end_pc": 209188,
+      "instruction_count": 1,
+      "cycle_count": 257,
+      "cycle_pct": 0.25699743002569975,
+      "ipc": 0.0038910505836575876
+    },
+    {
+      "name": "PC_0000B6C0",
+      "start_pc": 46784,
+      "end_pc": 46788,
+      "instruction_count": 1,
+      "cycle_count": 257,
+      "cycle_pct": 0.25699743002569975,
+      "ipc": 0.0038910505836575876
+    },
+    {
+      "name": "PC_0005863C",
+      "start_pc": 362044,
+      "end_pc": 362048,
+      "instruction_count": 1,
+      "cycle_count": 257,
+      "cycle_pct": 0.25699743002569975,
+      "ipc": 0.0038910505836575876
+    },
+    {
+      "name": "PC_0003487C",
+      "start_pc": 215164,
+      "end_pc": 215168,
+      "instruction_count": 1,
+      "cycle_count": 257,
+      "cycle_pct": 0.25699743002569975,
+      "ipc": 0.0038910505836575876
+    },
+    {
+      "name": "PC_000204BC",
+      "start_pc": 132284,
+      "end_pc": 132288,
+      "instruction_count": 1,
+      "cycle_count": 257,
+      "cycle_pct": 0.25699743002569975,
+      "ipc": 0.0038910505836575876
+    },
+    {
+      "name": "PC_00026FC4",
+      "start_pc": 159684,
+      "end_pc": 159688,
+      "instruction_count": 1,
+      "cycle_count": 257,
+      "cycle_pct": 0.25699743002569975,
+      "ipc": 0.0038910505836575876
+    },
+    {
+      "name": "PC_0005C87C",
+      "start_pc": 379004,
+      "end_pc": 379008,
+      "instruction_count": 1,
+      "cycle_count": 257,
+      "cycle_pct": 0.25699743002569975,
+      "ipc": 0.0038910505836575876
+    },
+    {
+      "name": "PC_0005C700",
+      "start_pc": 378624,
+      "end_pc": 378628,
+      "instruction_count": 1,
+      "cycle_count": 257,
+      "cycle_pct": 0.25699743002569975,
+      "ipc": 0.0038910505836575876
+    },
+    {
+      "name": "PC_0000ACAC",
+      "start_pc": 44204,
+      "end_pc": 44208,
+      "instruction_count": 1,
+      "cycle_count": 257,
+      "cycle_pct": 0.25699743002569975,
+      "ipc": 0.0038910505836575876
+    },
+    {
+      "name": "PC_00017F60",
+      "start_pc": 98144,
+      "end_pc": 98148,
+      "instruction_count": 1,
+      "cycle_count": 257,
+      "cycle_pct": 0.25699743002569975,
+      "ipc": 0.0038910505836575876
+    },
+    {
+      "name": "PC_00018258",
+      "start_pc": 98904,
+      "end_pc": 98908,
+      "instruction_count": 1,
+      "cycle_count": 257,
+      "cycle_pct": 0.25699743002569975,
+      "ipc": 0.0038910505836575876
+    },
+    {
+      "name": "PC_0002E5D0",
+      "start_pc": 189904,
+      "end_pc": 189908,
+      "instruction_count": 1,
+      "cycle_count": 257,
+      "cycle_pct": 0.25699743002569975,
+      "ipc": 0.0038910505836575876
+    },
+    {
+      "name": "PC_00040654",
+      "start_pc": 263764,
+      "end_pc": 263768,
+      "instruction_count": 1,
+      "cycle_count": 257,
+      "cycle_pct": 0.25699743002569975,
+      "ipc": 0.0038910505836575876
+    }
+  ],
+  "cycle_distribution": {
+    "full_issue_cycles": 16666,
+    "partial_issue_cycles": 30000,
+    "stall_cycles": 53335,
+    "memory_stall_cycles": 21334,
+    "dependency_stall_cycles": 16000
+  }
+}

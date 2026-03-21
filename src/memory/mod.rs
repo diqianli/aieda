@@ -3,10 +3,15 @@
 mod lsq;
 mod cache;
 mod controller;
+pub mod enhanced;
 
 pub use lsq::{LoadStoreQueue, LsqHandle};
 pub use cache::{Cache, CacheConfig, CacheStats, CacheLineState};
 pub use controller::MemoryController;
+pub use enhanced::{
+    EnhancedCache, EnhancedCacheStats, Mshr, MshrEntry, MshrStats, MissType,
+    Prefetcher, PrefetchRequest, PrefetcherStats, NextLinePrefetcher, StridePrefetcher,
+};
 
 use crate::config::CPUConfig;
 use crate::types::{InstructionId, MemAccess, Result};

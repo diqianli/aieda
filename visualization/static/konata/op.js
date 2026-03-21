@@ -203,3 +203,12 @@ class Op {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { Op, Stage, Lane, DependencyRef, STAGE_COLORS, DEP_COLORS };
 }
+// Expose globally for browser usage
+if (typeof window !== 'undefined') {
+    window.Op = Op;
+    window.Stage = Stage;
+    window.Lane = Lane;
+    window.DependencyRef = DependencyRef;
+    window.STAGE_COLORS = STAGE_COLORS;
+    window.DEP_COLORS = DEP_COLORS;
+}

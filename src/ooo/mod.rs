@@ -3,10 +3,12 @@
 mod dependency;
 mod window;
 mod scheduler;
+pub mod parallel;
 
 pub use dependency::{DependencyTracker, DependencyInfo};
 pub use window::{InstructionWindow, WindowEntry};
 pub use scheduler::Scheduler;
+pub use parallel::{BatchSimulator, BatchResult, InstructionBatch, ParallelConfig};
 
 use crate::config::CPUConfig;
 use crate::types::{Instruction, InstructionId, InstrStatus, Result};

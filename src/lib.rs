@@ -73,13 +73,20 @@
 //! };
 //! ```
 
+pub mod analysis;
 pub mod chi;
 pub mod config;
 pub mod cpu;
+pub mod decoder;
+pub mod elf;
 pub mod input;
 pub mod memory;
+pub mod multi_instance;
 pub mod ooo;
+pub mod output;
+pub mod simulation;
 pub mod stats;
+pub mod trace;
 pub mod types;
 pub mod visualization;
 

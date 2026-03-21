@@ -411,47 +411,44 @@ impl StageTiming {
     /// This ensures the dependency arrow points to the correct cycle.
     pub fn to_stages(&self) -> Vec<KonataStage> {
         let mut stages = Vec::new();
-        let mut last_end = 0u64;
         let mut exec_mem_end: Option<u64> = None; // Store original Execute/Memory end cycle
 
-        // Helper function to add a stage with adjusted timing
+        // Helper function to add a stage with proper timing
+        // Note: Pipeline stages CAN overlap - an instruction can be in Issue (waiting)
+        // while another is in Execute. We should NOT force sequential timing.
         fn add_stage_inner(
             stages: &mut Vec<KonataStage>,
             name: &str,
             start: u64,
             end: u64,
-            last_end: &mut u64,
         ) {
-            // Ensure this stage starts after or at the same time as the previous stage ends
-            let adjusted_start = std::cmp::max(start, *last_end);
             // Ensure minimum duration of 1 cycle
-            let adjusted_end = std::cmp::max(end, adjusted_start + 1);
-            stages.push(KonataStage::new(name, adjusted_start, adjusted_end));
-            *last_end = adjusted_end;
+            let adjusted_end = std::cmp::max(end, start + 1);
+            stages.push(KonataStage::new(name, start, adjusted_end));
         }
 
         // Add stages in pipeline order
         if let (Some(s), Some(e)) = (self.fetch_start, self.fetch_end) {
-            add_stage_inner(&mut stages, "F", s, e, &mut last_end);
+            add_stage_inner(&mut stages, "F", s, e);
         }
         if let (Some(s), Some(e)) = (self.decode_start, self.decode_end) {
-            add_stage_inner(&mut stages, "Dc", s, e, &mut last_end);
+            add_stage_inner(&mut stages, "Dc", s, e);
         }
         if let (Some(s), Some(e)) = (self.rename_start, self.rename_end) {
-            add_stage_inner(&mut stages, "Rn", s, e, &mut last_end);
+            add_stage_inner(&mut stages, "Rn", s, e);
         }
         if let (Some(s), Some(e)) = (self.dispatch_start, self.dispatch_end) {
-            add_stage_inner(&mut stages, "Ds", s, e, &mut last_end);
+            add_stage_inner(&mut stages, "Ds", s, e);
         }
         if let (Some(s), Some(e)) = (self.issue_start, self.issue_end) {
-            add_stage_inner(&mut stages, "Is", s, e, &mut last_end);
+            add_stage_inner(&mut stages, "Is", s, e);
         }
         if let (Some(s), Some(e)) = (self.memory_start, self.memory_end) {
-            // Store original Execute/Memory end cycle before adjustment
+            // Store original Execute/Memory end cycle
             exec_mem_end = Some(e);
-            add_stage_inner(&mut stages, "Me", s, e, &mut last_end);
+            add_stage_inner(&mut stages, "Me", s, e);
         } else if let (Some(s), Some(e)) = (self.execute_start, self.execute_end) {
-            add_stage_inner(&mut stages, "Ex", s, e, &mut last_end);
+            add_stage_inner(&mut stages, "Ex", s, e);
             // Store original Execute/Memory end for Complete stage timing
             exec_mem_end = self.execute_end.or(self.memory_end);
         }
@@ -464,13 +461,15 @@ impl StageTiming {
                 let cm_start = e;
                 // Use complete_cycle for end time
                 let cm_end = c;
-                add_stage_inner(&mut stages, "Cm", cm_start, cm_end, &mut last_end);
+                add_stage_inner(&mut stages, "Cm", cm_start, cm_end);
             }
         }
 
         // Retire stage: from Complete to retire
         if let Some(r) = self.retire_cycle {
-            add_stage_inner(&mut stages, "Rt", last_end, r, &mut last_end);
+            // Retire starts when Complete ends
+            let rt_start = self.complete_cycle.unwrap_or(r);
+            add_stage_inner(&mut stages, "Rt", rt_start, r);
         }
 
         stages

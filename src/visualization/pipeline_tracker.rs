@@ -31,6 +31,14 @@ pub struct PipelineTracker {
     completed: VecDeque<InstructionId>,
     /// Dependencies recorded
     dependencies: AHashMap<InstructionId, Vec<KonataDependencyRef>>,
+    /// Disassembly strings for instructions
+    disasm_map: AHashMap<InstructionId, String>,
+    /// Source registers for instructions
+    src_regs_map: AHashMap<InstructionId, Vec<u16>>,
+    /// Destination registers for instructions
+    dst_regs_map: AHashMap<InstructionId, Vec<u16>>,
+    /// Memory access info
+    mem_access_map: AHashMap<InstructionId, (u64, u8, bool)>, // (addr, size, is_load)
     /// Fetch width (max instructions per cycle)
     fetch_width: usize,
     /// Count of instructions fetched in current cycle
@@ -51,6 +59,10 @@ impl PipelineTracker {
             max_completed: 1000,
             completed: VecDeque::new(),
             dependencies: AHashMap::new(),
+            disasm_map: AHashMap::new(),
+            src_regs_map: AHashMap::new(),
+            dst_regs_map: AHashMap::new(),
+            mem_access_map: AHashMap::new(),
             fetch_width: 8,
             fetch_count_in_cycle: 0,
             current_fetch_cycle: 0,
@@ -113,6 +125,26 @@ impl PipelineTracker {
             self.order.push_back(id);
         }
 
+        // Save disassembly for later export
+        if let Some(ref disasm) = instr.disasm {
+            self.disasm_map.insert(id, disasm.clone());
+        }
+
+        // Save source registers
+        if !instr.src_regs.is_empty() {
+            self.src_regs_map.insert(id, instr.src_regs.iter().map(|r| r.0 as u16).collect());
+        }
+
+        // Save destination registers
+        if !instr.dst_regs.is_empty() {
+            self.dst_regs_map.insert(id, instr.dst_regs.iter().map(|r| r.0 as u16).collect());
+        }
+
+        // Save memory access info
+        if let Some(ref mem) = instr.mem_access {
+            self.mem_access_map.insert(id, (mem.addr, mem.size, mem.is_load));
+        }
+
         // Record dependencies
         self.record_instruction_dependencies(instr);
     }
@@ -131,68 +163,49 @@ impl PipelineTracker {
 
     /// Record an instruction being dispatched to the window.
     /// This also records Decode and Rename stages if not already recorded.
+    /// Stages are always sequential: F -> Dc -> Rn -> Ds
     pub fn record_dispatch(&mut self, id: InstructionId, cycle: u64) {
         let timing = self.timings.entry(id).or_insert_with(StageTiming::new);
 
-        // Get fetch end cycle
+        // Get fetch end cycle (fetch must have been recorded first)
         let fetch_end = timing.fetch_end.unwrap_or(cycle);
 
-        // If dispatch cycle is after fetch, we can infer decode and rename stages
-        // Otherwise, all stages (fetch, decode, rename, dispatch) happen in the same cycle
-        if cycle > fetch_end {
-            // We have time for decode and rename stages between fetch and dispatch
-            // Calculate how many cycles we have for decode + rename
-            let available_cycles = cycle - fetch_end;
-
-            if available_cycles >= 2 {
-                // Normal case: 1 cycle each for decode and rename
-                // Record Decode stage if not already recorded
-                if timing.decode_start.is_none() {
-                    timing.record_decode(fetch_end, fetch_end + 1);
-                }
-                let decode_end = timing.decode_end.unwrap_or(fetch_end + 1);
-
-                // Record Rename stage if not already recorded
-                if timing.rename_start.is_none() {
-                    timing.record_rename(decode_end, decode_end + 1);
-                }
-                let rename_end = timing.rename_end.unwrap_or(decode_end + 1);
-
-                // Dispatch: starts at rename_end, ends at cycle
-                let dispatch_start = rename_end;
-                let dispatch_end = cycle;
-                timing.record_dispatch(dispatch_start, dispatch_end);
-            } else if available_cycles == 1 {
-                // Compressed: decode and rename share 1 cycle
-                if timing.decode_start.is_none() {
-                    timing.record_decode(fetch_end, cycle);
-                }
-                if timing.rename_start.is_none() {
-                    timing.record_rename(fetch_end, cycle);
-                }
-                // Dispatch is zero-duration at cycle
-                timing.record_dispatch(cycle, cycle);
-            } else {
-                // available_cycles == 0: all stages happen at the same cycle
-                if timing.decode_start.is_none() {
-                    timing.record_decode(fetch_end, fetch_end);
-                }
-                if timing.rename_start.is_none() {
-                    timing.record_rename(fetch_end, fetch_end);
-                }
-                timing.record_dispatch(fetch_end, fetch_end);
-            }
+        // Decode starts at fetch_end
+        let decode_start = fetch_end;
+        // If dispatch is after fetch, decode has time; otherwise decode is 1 cycle
+        let decode_end = if cycle > fetch_end {
+            std::cmp::min(fetch_end + 1, cycle)
         } else {
-            // cycle <= fetch_end: dispatch happens at or before fetch_end
-            // All stages are zero-duration or collapsed
-            if timing.decode_start.is_none() {
-                timing.record_decode(cycle, cycle);
-            }
-            if timing.rename_start.is_none() {
-                timing.record_rename(cycle, cycle);
-            }
-            timing.record_dispatch(cycle, cycle);
+            fetch_end + 1
+        };
+
+        // Record Decode stage if not already recorded
+        if timing.decode_start.is_none() {
+            timing.record_decode(decode_start, decode_end);
         }
+        let actual_decode_end = timing.decode_end.unwrap_or(decode_end);
+
+        // Rename starts at decode_end
+        let rename_start = actual_decode_end;
+        // If dispatch is after decode_end, rename has time; otherwise rename is 1 cycle
+        let rename_end = if cycle > actual_decode_end {
+            std::cmp::min(actual_decode_end + 1, cycle)
+        } else {
+            actual_decode_end + 1
+        };
+
+        // Record Rename stage if not already recorded
+        if timing.rename_start.is_none() {
+            timing.record_rename(rename_start, rename_end);
+        }
+        let actual_rename_end = timing.rename_end.unwrap_or(rename_end);
+
+        // Dispatch starts at rename_end
+        let dispatch_start = actual_rename_end;
+        // Dispatch ends at the given cycle, but ensure it's at least rename_end
+        let dispatch_end = std::cmp::max(cycle, actual_rename_end);
+
+        timing.record_dispatch(dispatch_start, dispatch_end);
     }
 
     /// Record an instruction becoming ready (all operands available).
@@ -474,6 +487,41 @@ impl PipelineTracker {
     /// Get dependencies for a specific instruction.
     pub fn get_dependencies(&self, id: InstructionId) -> Option<&Vec<KonataDependencyRef>> {
         self.dependencies.get(&id)
+    }
+
+    /// Get all timings.
+    pub fn get_all_timings(&self) -> &AHashMap<InstructionId, StageTiming> {
+        &self.timings
+    }
+
+    /// Get all viz_id mappings.
+    pub fn get_all_viz_ids(&self) -> &AHashMap<InstructionId, u64> {
+        &self.viz_id_map
+    }
+
+    /// Get all dependencies.
+    pub fn get_all_dependencies(&self) -> &AHashMap<InstructionId, Vec<KonataDependencyRef>> {
+        &self.dependencies
+    }
+
+    /// Get all disassembly strings.
+    pub fn get_all_disasm(&self) -> &AHashMap<InstructionId, String> {
+        &self.disasm_map
+    }
+
+    /// Get all source registers.
+    pub fn get_all_src_regs(&self) -> &AHashMap<InstructionId, Vec<u16>> {
+        &self.src_regs_map
+    }
+
+    /// Get all destination registers.
+    pub fn get_all_dst_regs(&self) -> &AHashMap<InstructionId, Vec<u16>> {
+        &self.dst_regs_map
+    }
+
+    /// Get all memory access info.
+    pub fn get_all_mem_access(&self) -> &AHashMap<InstructionId, (u64, u8, bool)> {
+        &self.mem_access_map
     }
 
     /// Get the retire counter.

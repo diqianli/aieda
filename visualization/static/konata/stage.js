@@ -39,6 +39,7 @@ function renderStage(ctx, stage, layout, options = {}) {
     const startX = cycleToX(stage.startCycle);
     const endX = cycleToX(stage.endCycle);
     const width = Math.max(endX - startX, cycleWidth);
+    const numCycles = stage.endCycle - stage.startCycle;
 
     // Draw stage rectangle
     ctx.save();
@@ -57,21 +58,50 @@ function renderStage(ctx, stage, layout, options = {}) {
     ctx.fill();
     ctx.stroke();
 
-    // Draw label if enabled and there's enough space
-    if (showLabels && width > 20) {
-        ctx.fillStyle = `rgba(255, 255, 255, ${0.9 * alpha})`;
-        ctx.font = `${STAGE_CONFIG.fontSize}px monospace`;
+    // Draw cycle separator lines within stage
+    if (numCycles > 1 && cycleWidth > 4) {
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+        ctx.lineWidth = 2;
+
+        for (let c = 1; c < numCycles; c++) {
+            const cycleX = cycleToX(stage.startCycle + c);
+            ctx.beginPath();
+            ctx.moveTo(cycleX, baseY);
+            ctx.lineTo(cycleX, baseY + height);
+            ctx.stroke();
+        }
+    }
+
+    // Draw content in each cycle cell
+    if (numCycles > 0 && cycleWidth > 6) {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        const label = stage.name;
-        const textX = startX + width / 2;
-        const textY = baseY + height / 2;
+        for (let c = 0; c < numCycles; c++) {
+            const cycleX = cycleToX(stage.startCycle + c);
+            const cycleEndX = cycleToX(stage.startCycle + c + 1);
+            const cycleCenterX = (cycleX + cycleEndX) / 2;
+            const cycleWidthPx = cycleEndX - cycleX;
 
-        // Only draw if text fits
-        const textWidth = ctx.measureText(label).width;
-        if (textWidth < width - STAGE_CONFIG.labelPadding * 2) {
-            ctx.fillText(label, textX, textY);
+            if (cycleWidthPx < 8) continue;
+
+            // First cycle: show stage name
+            // Last cycle: show stage name
+            // Middle cycles: show cycle number
+            const isFirst = (c === 0);
+            const isLast = (c === numCycles - 1);
+
+            if (isFirst || isLast) {
+                // Show stage name (e.g., "F", "Dc", "Ex")
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 10px monospace';
+                ctx.fillText(stage.name, cycleCenterX, baseY + height / 2);
+            } else {
+                // Show cycle number (relative to stage start)
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.font = '9px monospace';
+                ctx.fillText(c.toString(), cycleCenterX, baseY + height / 2);
+            }
         }
     }
 
@@ -187,4 +217,12 @@ if (typeof module !== 'undefined' && module.exports) {
         calculateStageBounds,
         STAGE_CONFIG
     };
+}
+// Expose globally for browser usage
+if (typeof window !== 'undefined') {
+    window.renderStage = renderStage;
+    window.renderOpStages = renderOpStages;
+    window.roundRect = roundRect;
+    window.calculateStageBounds = calculateStageBounds;
+    window.STAGE_CONFIG = STAGE_CONFIG;
 }

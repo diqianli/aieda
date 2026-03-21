@@ -134,6 +134,11 @@ impl CPUEmulator {
         while self.running {
             let committed_before = self.committed_count;
 
+            // Capture pre-execute snapshot for visualization
+            self.visualization.set_cycle(self.current_cycle);
+            self.visualization.set_committed_count(self.committed_count);
+            self.visualization.capture_snapshot(&self.ooo_engine, &self.get_metrics());
+
             // Fetch and dispatch instructions
             self.fetch_dispatch(source)?;
 
@@ -150,6 +155,9 @@ impl CPUEmulator {
 
             // Commit completed instructions
             self.commit()?;
+
+            // Capture post-execute snapshot for visualization
+            self.visualization.capture_snapshot(&self.ooo_engine, &self.get_metrics());
 
             // Advance cycle
             self.advance_cycle();

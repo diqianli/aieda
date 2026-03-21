@@ -120,6 +120,7 @@ impl ExecutionUnit {
             OpcodeType::Add | OpcodeType::Sub |
             OpcodeType::And | OpcodeType::Orr | OpcodeType::Eor |
             OpcodeType::Lsl | OpcodeType::Lsr | OpcodeType::Asr |
+            OpcodeType::Mov | OpcodeType::Cmp | OpcodeType::Shift |
             OpcodeType::Other => ExecutionUnit::IntAlu,
 
             // Multiply/divide instructions
@@ -161,7 +162,18 @@ impl ExecutionUnit {
             OpcodeType::Fnmadd | OpcodeType::Fnmsub => ExecutionUnit::FpSimd,
 
             // System instructions
-            OpcodeType::Msr | OpcodeType::Mrs | OpcodeType::Sys | OpcodeType::Nop => ExecutionUnit::IntAlu,
+            OpcodeType::Msr | OpcodeType::Mrs | OpcodeType::Sys | OpcodeType::Nop |
+            OpcodeType::Dmb | OpcodeType::Dsb | OpcodeType::Isb | OpcodeType::Eret |
+            OpcodeType::Yield => ExecutionUnit::IntAlu,
+
+            // Floating-point convert
+            OpcodeType::Fcvt => ExecutionUnit::FpSimd,
+
+            // PC-relative addressing
+            OpcodeType::Adr => ExecutionUnit::IntAlu,
+
+            // Polynomial multiply - use Crypto unit
+            OpcodeType::Pmull => ExecutionUnit::Crypto,
         }
     }
 

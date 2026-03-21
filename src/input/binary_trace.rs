@@ -424,6 +424,22 @@ impl BinaryTraceWriter {
             OpcodeType::Fmsub => 49,
             OpcodeType::Fnmadd => 50,
             OpcodeType::Fnmsub => 51,
+            // Data movement (52-54)
+            OpcodeType::Mov => 52,
+            OpcodeType::Cmp => 53,
+            OpcodeType::Shift => 54,
+            // FP convert (55)
+            OpcodeType::Fcvt => 55,
+            // Memory barriers (56-58)
+            OpcodeType::Dmb => 56,
+            OpcodeType::Dsb => 57,
+            OpcodeType::Isb => 58,
+            // System (59-61)
+            OpcodeType::Eret => 59,
+            OpcodeType::Yield => 60,
+            OpcodeType::Adr => 61,
+            // Crypto (62)
+            OpcodeType::Pmull => 62,
             // Other
             OpcodeType::Other => 255,
         }

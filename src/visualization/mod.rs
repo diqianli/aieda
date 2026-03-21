@@ -277,28 +277,11 @@ impl VisualizationState {
         // Get all tracked instructions from the window
         let entries: Vec<_> = ooo_engine.get_window_entries().collect();
 
-        // For each instruction in the window, ensure we have timing info
-        // This syncs with what the CPU has tracked
-        for entry in &entries {
-            let id = entry.instruction.id;
-            if self.pipeline_tracker.get_timing(id).is_none() {
-                // Create timing from window entry data
-                let mut timing = StageTiming::new();
-                timing.record_dispatch(entry.dispatch_cycle, entry.dispatch_cycle + 1);
-                if let Some(issue) = entry.issue_cycle {
-                    timing.record_issue(entry.dispatch_cycle, issue);
-                    timing.record_execute(issue, entry.complete_cycle.unwrap_or(issue + 1));
-                }
-                if let Some(complete) = entry.complete_cycle {
-                    timing.record_complete(complete);
-                }
-                if let Some(retire) = entry.retire_cycle {
-                    timing.record_retire(retire);
-                }
-                // Store the timing
-                self.pipeline_tracker.timings.insert(id, timing);
-            }
-        }
+        // Note: We no longer create fallback timing from window entries because:
+        // 1. record_fetch() is always called before instructions appear in the window
+        // 2. Creating timing from window entries (especially issue_cycle which is never set)
+        //    results in incorrect timing that violates dependency constraints
+        // 3. The to_konata_ops function handles in-progress stages correctly
 
         let snapshot = self.pipeline_tracker.to_snapshot(
             entries.into_iter(),
@@ -331,6 +314,80 @@ impl VisualizationState {
             self.current_cycle,
             self.committed_count,
         )
+    }
+
+    /// Export all Konata data to a JSON file.
+    ///
+    /// This merges all snapshots and exports a single JSON file containing
+    /// all tracked operations with their pipeline stage timing.
+    ///
+    /// # Arguments
+    /// * `path` - Output file path
+    ///
+    /// # Returns
+    /// The number of operations exported, or an error.
+    #[cfg(feature = "visualization")]
+    pub fn export_konata_to_file<P: AsRef<std::path::Path>>(&self, path: P) -> std::io::Result<usize> {
+        use std::fs::File;
+        use std::io::Write;
+
+        // Merge all snapshots into one comprehensive export
+        let mut all_ops: Vec<KonataOp> = Vec::new();
+        let mut last_cycle = 0u64;
+        let mut last_committed = 0u64;
+
+        for snapshot in &self.konata_snapshots {
+            last_cycle = snapshot.cycle;
+            last_committed = snapshot.committed_count;
+
+            for op in &snapshot.ops {
+                // Only add if not already present (by id)
+                if !all_ops.iter().any(|o: &KonataOp| o.id == op.id) {
+                    all_ops.push(op.clone());
+                }
+            }
+        }
+
+        // Sort by ID
+        all_ops.sort_by_key(|op| op.id);
+
+        let ops_count = all_ops.len();
+
+        // Create export structure
+        #[derive(serde::Serialize)]
+        struct KonataExport {
+            version: String,
+            total_cycles: u64,
+            total_instructions: u64,
+            ops_count: usize,
+            ops: Vec<KonataOp>,
+        }
+
+        let export = KonataExport {
+            version: "1.0".to_string(),
+            total_cycles: last_cycle,
+            total_instructions: last_committed,
+            ops_count,
+            ops: all_ops,
+        };
+
+        // Write to file
+        let json = serde_json::to_string_pretty(&export)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        let mut file = File::create(path)?;
+        file.write_all(json.as_bytes())?;
+
+        Ok(ops_count)
+    }
+
+    /// Get the current cycle.
+    pub fn current_cycle(&self) -> u64 {
+        self.current_cycle
+    }
+
+    /// Get the committed instruction count.
+    pub fn committed_count(&self) -> u64 {
+        self.committed_count
     }
 }
 

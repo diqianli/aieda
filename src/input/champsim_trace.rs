@@ -115,22 +115,26 @@ impl ChampSimTraceParser {
             let dst_count = cs_instr.destination_registers.iter().filter(|&&r| r != 0).count();
 
             match (src_count, dst_count) {
-                // No destination register - likely a comparison or test (use Sub as proxy)
-                (1..=4, 0) => OpcodeType::Sub,
-                // One source, one destination - could be MOV or unary op (use Add as proxy)
-                (1, 1) => OpcodeType::Add,
+                // No destination register - likely a comparison or test
+                (1..=4, 0) => OpcodeType::Cmp,
+                // One source, one destination - could be MOV or unary op
+                (1, 1) => OpcodeType::Mov,
                 // Two sources, one destination - typical ALU op (ADD, SUB, AND, OR, etc.)
                 (2, 1) => OpcodeType::Add,
                 // Three sources, one destination - could be MUL or FMA
                 (3, 1) => OpcodeType::Mul,
                 // Four sources, one destination - complex op
                 (4, 1) => OpcodeType::Mul,
+                // No sources, one destination - likely MOV immediate
+                (0, 1) => OpcodeType::Mov,
+                // No sources, no destination - likely NOP or system
+                (0, 0) => OpcodeType::Nop,
                 // Default to Add for compute instructions with destination
                 (_, 1) => OpcodeType::Add,
                 // Multiple destinations - likely SIMD or pair operations
                 (_, 2) => OpcodeType::LoadPair,
-                // Fallback
-                _ => OpcodeType::Other,
+                // Fallback to Nop (shouldn't happen often)
+                _ => OpcodeType::Nop,
             }
         };
 

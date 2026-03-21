@@ -699,3 +699,56 @@ h1 {
         height: 300px;
     }
 }
+
+/* File Controls */
+.file-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+/* Status Bar */
+.status-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 10px 20px;
+    background-color: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    z-index: 1000;
+}
+
+/* Large Pipeline Container for Static View */
+.pipeline-view-container {
+    background-color: var(--bg-primary);
+    border-radius: 8px;
+    height: 600px;
+    overflow: hidden;
+}
+
+/* Loading Spinner */
+.loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+    color: var(--text-secondary);
+}
+
+.loading::after {
+    content: '';
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border-color);
+    border-top-color: var(--accent-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-left: 10px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}

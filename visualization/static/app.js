@@ -172,8 +172,14 @@ class CPUVisualization {
 
     async loadKonataData() {
         console.log('CPUVisualization: Loading Konata data, pipelineView:', this.pipelineView);
+
+        // Initialize pipeline view if not already done
         if (!this.pipelineView) {
-            console.warn('CPUVisualization: PipelineView not initialized');
+            this.initPipelineView();
+        }
+
+        if (!this.pipelineView) {
+            console.warn('CPUVisualization: PipelineView still not initialized after attempt');
             return;
         }
 

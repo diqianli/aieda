@@ -23,3 +23,14 @@ Thumbs.db
 
 # Claude project files
 .claude/
+
+# Node modules
+node_modules/
+package-lock.json
+
+# Large generated files
+visualization/static/konata_data.json
+*.png
+
+# Tauri build
+src-tauri/target/

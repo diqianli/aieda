@@ -628,6 +628,45 @@ class KonataRenderer {
                 this.drawRoundRect(ctx, startX, stageY, width, stageHeight, 3);
                 ctx.fill();
                 ctx.stroke();
+
+                // Draw cycle separators and cycle numbers within stage
+                const numCycles = stage.endCycle - stage.startCycle;
+                if (numCycles > 0 && layout.cycleWidth > 4) {
+                    ctx.save();
+
+                    // Draw cycle separator lines - more visible
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                    ctx.lineWidth = 2;
+
+                    for (let c = 1; c < numCycles; c++) {
+                        const cycleX = layout.cycleToX(stage.startCycle + c);
+                        ctx.beginPath();
+                        ctx.moveTo(cycleX, stageY);
+                        ctx.lineTo(cycleX, stageY + stageHeight);
+                        ctx.stroke();
+                    }
+
+                    // Draw cycle numbers (relative to stage start)
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 10px monospace';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+
+                    for (let c = 0; c < numCycles; c++) {
+                        const cycleX = layout.cycleToX(stage.startCycle + c);
+                        const cycleEndX = layout.cycleToX(stage.startCycle + c + 1);
+                        const cycleCenterX = (cycleX + cycleEndX) / 2;
+                        const cycleWidthPx = cycleEndX - cycleX;
+
+                        // Only draw number if there's enough space
+                        if (cycleWidthPx > 8) {
+                            // c is 0-indexed cycle number within this stage
+                            ctx.fillText(c.toString(), cycleCenterX, stageY + stageHeight / 2);
+                        }
+                    }
+
+                    ctx.restore();
+                }
             }
         }
     }
@@ -1124,12 +1163,14 @@ class KonataRenderer {
             const opY = index * layout.rowHeight;
             this.scrollY = Math.max(0, opY - this.height / 2 + layout.rowHeight);
 
-            // Always align the instruction's earliest cycle to the left edge of timeline
-            // This ensures the selected instruction's pipeline stages are visible
+            // Align the instruction's earliest cycle to the left edge of timeline
+            // cycleOffset is relative to minCycle, so we need: earliestCycle - minCycle - cycleOffset = 0
             const earliestCycle = op.earliestCycle || op.fetchedCycle;
             this.scrollX = 0;
-            this.cycleOffset = earliestCycle;
+            this.cycleOffset = earliestCycle - layout.minCycle;
             this.needsLayout = true;
+
+            console.log('scrollToOp: op.id=', op.id, 'earliestCycle=', earliestCycle, 'minCycle=', layout.minCycle, 'cycleOffset=', this.cycleOffset);
         }
     }
 
@@ -1184,4 +1225,9 @@ class KonataRenderer {
 // Export for module usage
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { KonataRenderer, DEFAULT_CONFIG };
+}
+// Expose globally for browser usage
+if (typeof window !== 'undefined') {
+    window.KonataRenderer = KonataRenderer;
+    window.DEFAULT_CONFIG = DEFAULT_CONFIG;
 }

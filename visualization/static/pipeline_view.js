@@ -422,3 +422,7 @@ class PipelineView {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { PipelineView };
 }
+// Expose globally for browser usage
+if (typeof window !== 'undefined') {
+    window.PipelineView = PipelineView;
+}

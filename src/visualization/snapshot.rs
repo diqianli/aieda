@@ -192,6 +192,10 @@ fn opcode_to_string(opcode: OpcodeType) -> String {
         OpcodeType::Lsl => "LSL".to_string(),
         OpcodeType::Lsr => "LSR".to_string(),
         OpcodeType::Asr => "ASR".to_string(),
+        // Data movement
+        OpcodeType::Mov => "MOV".to_string(),
+        OpcodeType::Cmp => "CMP".to_string(),
+        OpcodeType::Shift => "SHIFT".to_string(),
         // Load/Store
         OpcodeType::Load => "LOAD".to_string(),
         OpcodeType::Store => "STORE".to_string(),
@@ -242,6 +246,18 @@ fn opcode_to_string(opcode: OpcodeType) -> String {
         OpcodeType::Fmsub => "FMSUB".to_string(),
         OpcodeType::Fnmadd => "FNMADD".to_string(),
         OpcodeType::Fnmsub => "FNMSUB".to_string(),
+        // Floating-point convert
+        OpcodeType::Fcvt => "FCVT".to_string(),
+        // Memory Barriers
+        OpcodeType::Dmb => "DMB".to_string(),
+        OpcodeType::Dsb => "DSB".to_string(),
+        OpcodeType::Isb => "ISB".to_string(),
+        // System
+        OpcodeType::Eret => "ERET".to_string(),
+        OpcodeType::Yield => "YIELD".to_string(),
+        OpcodeType::Adr => "ADR".to_string(),
+        // Crypto
+        OpcodeType::Pmull => "PMULL".to_string(),
         // Other
         OpcodeType::Other => "OTHER".to_string(),
     }

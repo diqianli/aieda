@@ -63,6 +63,10 @@ pub enum OpcodeType {
     Lsl,
     Lsr,
     Asr,
+    // Data movement
+    Mov,
+    Cmp,
+    Shift,
     // Load/Store
     Load,
     Store,
@@ -144,6 +148,26 @@ pub enum OpcodeType {
     Fnmadd,
     /// Floating-point Negated Fused Multiply-Subtract
     Fnmsub,
+    /// Floating-point Convert
+    Fcvt,
+
+    // === Memory Barriers ===
+    /// Data Memory Barrier
+    Dmb,
+    /// Data Synchronization Barrier
+    Dsb,
+    /// Instruction Synchronization Barrier
+    Isb,
+
+    // === Other System Instructions ===
+    /// Exception Return
+    Eret,
+    /// Yield hint
+    Yield,
+    /// Form PC-relative address
+    Adr,
+    /// Polynomial Multiply Long
+    Pmull,
 
     // Other
     Other,
@@ -171,6 +195,7 @@ impl OpcodeType {
             Self::Add | Self::Sub | Self::Mul | Self::Div |
             Self::And | Self::Orr | Self::Eor |
             Self::Lsl | Self::Lsr | Self::Asr |
+            Self::Mov | Self::Cmp | Self::Shift |
             Self::Fadd | Self::Fsub | Self::Fmul | Self::Fdiv |
             // New SIMD/vector instructions
             Self::Vadd | Self::Vsub | Self::Vmul | Self::Vmla | Self::Vmls |
