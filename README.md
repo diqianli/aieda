@@ -1,3 +1,78 @@
+# ARM CPU Emulator
+
+ARMv8-A (AArch64) CPU emulator with out-of-order execution simulation and Konata-compatible pipeline visualization.
+
+## Features
+
+- **Out-of-Order Execution**: Models instruction window, dependency tracking, issue/commit bandwidth
+- **Memory Subsystem**: Detailed L1/L2 cache modeling with configurable parameters
+- **Konata Visualization**: Pipeline stage visualization compatible with Konata format
+- **TopDown Analysis**: Intel TopDown methodology for performance bottleneck identification
+- **Hotspot Detection**: Identify performance-critical code regions
+
+## Quick Start
+
+```bash
+# Clone repository
+git clone git@github.com:diqianli/aieda.git
+cd aieda
+
+# Build with visualization feature
+cargo build --features visualization --release
+
+# Run simulation (100K instructions)
+cargo run --features visualization --example generate_konata 100000
+
+# Start visualization server
+cd visualization/static && python3 -m http.server 8080
+
+# Open browser:
+# - Pipeline: http://localhost:8080/index_static.html
+# - TopDown: http://localhost:8080/konata_data_report.html
+```
+
+## Documentation
+
+See [SETUP.md](SETUP.md) for complete setup and usage instructions.
+
+## Project Structure
+
+```
+arm_cpu_emulator/
+├── src/                    # Source code
+│   ├── cpu.rs              # CPU emulator
+│   ├── ooo/                # Out-of-order execution
+│   ├── memory/             # Memory subsystem
+│   ├── analysis/           # TopDown analysis
+│   └── visualization/      # Konata format support
+├── examples/               # Example programs
+├── visualization/static/   # Web visualization files
+└── SETUP.md               # Detailed setup guide
+```
+
+## Sample Output
+
+```
+=== Konata Data Generator ===
+Instructions: 100000
+Time: 377.15s
+Total cycles: 100001
+Instructions committed: 100000
+IPC: 1.00
+
+TopDown Analysis:
+- Retiring: 16.7%
+- Frontend Bound: 10.7%
+- Backend Bound: 16.0%
+- Bad Speculation: 56.7%
+```
+
+## License
+
+MIT License
+
+---
+
 # AI Agent 在 IC 设计流程中的应用研究
 
 基于微信公众号文章《AI辅助RTL代码生成工具推荐》的深度研究，整理成可视化静态网页。
