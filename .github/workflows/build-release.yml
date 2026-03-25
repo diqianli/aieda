@@ -1,0 +1,65 @@
+name: Build Windows Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Build release
+      run: cargo build --release --features visualization
+
+    - name: Create release package
+      run: |
+        mkdir release_package
+        copy target/release/examples/generate_konata.exe release_package/
+        xcopy visualization\static release_package\static\ /E /I /Y
+
+    - name: Create run script
+      run: |
+        echo @echo off > release_package/run.bat
+        echo echo ARM CPU Emulator >> release_package/run.bat
+        echo echo ============== >> release_package/run.bat
+        echo echo Running simulation with 100K instructions... >> release_package/run.bat
+        echo echo. >> release_package/run.bat
+        echo generate_konata.exe 100000 static\konata_data.json >> release_package/run.bat
+        echo echo. >> release_package/run.bat
+        echo echo Simulation complete! >> release_package/run.bat
+        echo echo To view results: >> release_package/run.bat
+        echo echo   cd static >> release_package/run.bat
+        echo echo   python -m http.server 8080 >> release_package/run.bat
+        echo echo   Open: http://localhost:8080/konata_data_report.html >> release_package/run.bat
+        echo pause >> release_package/run.bat
+
+    - name: Create README
+      run: |
+        echo # ARM CPU Emulator - Windows Green Version > release_package/README.txt
+        echo. >> release_package/README.txt
+        echo ## Quick Start >> release_package/README.txt
+        echo. >> release_package/README.txt
+        echo 1. Double-click run.bat >> release_package/README.txt
+        echo 2. Wait for simulation to complete >> release_package/README.txt
+        echo 3. Open browser to view results >> release_package/README.txt
+        echo. >> release_package/README.txt
+        echo ## View Results >> release_package/README.txt
+        echo. >> release_package/README.txt
+        echo cd static >> release_package/README.txt
+        echo python -m http.server 8080 >> release_package/README.txt
+        echo Open: http://localhost:8080/konata_data_report.html >> release_package/README.txt
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: arm-cpu-emulator-windows
+        path: release_package/
+        retention-days: 30
