@@ -3,7 +3,9 @@ name: Build Windows Release
 on:
   push:
     branches: [main]
-  workflow_dispatch:  # Manual trigger
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
   build-windows:
@@ -19,47 +21,139 @@ jobs:
     - name: Build release
       run: cargo build --release --features visualization
 
+    - name: Run simulation
+      run: |
+        cargo run --release --features visualization --example generate_konata 100000 visualization\static\konata_data.json
+
     - name: Create release package
       run: |
         mkdir release_package
-        copy target/release/examples/generate_konata.exe release_package/
-        xcopy visualization\static release_package\static\ /E /I /Y
+        copy target\release\examples\generate_konata.exe release_package\
+        xcopy visualization\static release_package\static
 
     - name: Create run script
       run: |
-        echo @echo off > release_package/run.bat
-        echo echo ARM CPU Emulator >> release_package/run.bat
-        echo echo ============== >> release_package/run.bat
-        echo echo Running simulation with 100K instructions... >> release_package/run.bat
-        echo echo. >> release_package/run.bat
+        @echo off > release_package/run.bat
+        echo ARM CPU Emulator - Windows >> release_package/run.bat
+        echo ============================ >> release_package/run.bat
+        echo. >> release_package/run.bat
+        echo Running simulation with 100000 instructions... >> release_package/run.bat
+        echo. >> release_package/run.bat
         echo generate_konata.exe 100000 static\konata_data.json >> release_package/run.bat
-        echo echo. >> release_package/run.bat
-        echo echo Simulation complete! >> release_package/run.bat
-        echo echo To view results: >> release_package/run.bat
-        echo echo   cd static >> release_package/run.bat
-        echo echo   python -m http.server 8080 >> release_package/run.bat
-        echo echo   Open: http://localhost:8080/konata_data_report.html >> release_package/run.bat
-        echo pause >> release_package/run.bat
-
-    - name: Create README
-      run: |
-        echo # ARM CPU Emulator - Windows Green Version > release_package/README.txt
-        echo. >> release_package/README.txt
-        echo ## Quick Start >> release_package/README.txt
-        echo. >> release_package/README.txt
-        echo 1. Double-click run.bat >> release_package/README.txt
-        echo 2. Wait for simulation to complete >> release_package/README.txt
-        echo 3. Open browser to view results >> release_package/README.txt
-        echo. >> release_package/README.txt
-        echo ## View Results >> release_package/README.txt
-        echo. >> release_package/README.txt
-        echo cd static >> release_package/README.txt
-        echo python -m http.server 8080 >> release_package/README.txt
-        echo Open: http://localhost:8080/konata_data_report.html >> release_package/README.txt
+        echo. >> release_package/run.bat
+        echo. >> release_package/run.bat
+        echo Simulation complete! >> release_package/run.bat
+        echo. >> release_package/run.bat
+        echo Output files generated in static\ folder: >> release_package/run.bat
+        echo   - konata_data.json >> release_package/run.bat
+        echo   - konata_data_topdown.json >> release_package/run.bat
+        echo   - konata_data_report.html >> release_package/run.bat
+        echo. >> release_package/run.bat
+        echo To view visualization: >> release_package/run.bat
+        echo   cd static >> release_package/run.bat
+        echo   python -m http.server 8080 >> release_package/run.bat
+        echo   Open: http://localhost:8080/konata_data_report.html >> release_package/run.bat
+        echo. >> release_package/run.bat
+        echo. >> release_package/run.bat
+        pause >> release_package/run.bat
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: arm-cpu-emulator-windows
+        path: release_package/
+        retention-days: 30
+
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Build release
+      run: cargo build --release --features visualization
+
+    - name: Run simulation
+      run: |
+        cargo run --release --features visualization --example generate_konata 100000 visualization/static/konata_data.json
+
+    - name: Create release package
+      run: |
+        mkdir -p release_package
+        cp target/release/examples/generate_konata release_package/
+        cp -r visualization/static release_package/static
+
+    - name: Create run script
+      run: |
+        echo '#!/bin/bash' > release_package/run.sh
+        echo 'echo "ARM CPU Emulator - Linux"' >> release_package/run.sh
+        echo 'echo "============================"' >> release_package/run.sh
+        echo 'echo ""' >> release_package/run.sh
+        echo 'echo "Running simulation with 100000 instructions..."' >> release_package/run.sh
+        echo './generate_konata 100000 static/konata_data.json' >> release_package/run.sh
+        echo 'echo ""' >> release_package/run.sh
+        echo 'echo "Simulation complete!"' >> release_package/run.sh
+        echo 'echo ""' >> release_package/run.sh
+        echo 'echo "To view visualization:"' >> release_package/run.sh
+        echo 'echo "  cd static && python3 -m http.server 8080"' >> release_package/run.sh
+        echo 'echo "  Open: http://localhost:8080/konata_data_report.html"' >> release_package/run.sh
+        chmod +x release_package/run.sh
+        chmod +x release_package/generate_konata
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: arm-cpu-emulator-linux
+        path: release_package/
+        retention-days: 30
+
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Build release
+      run: cargo build --release --features visualization
+
+    - name: Run simulation
+      run: |
+        cargo run --release --features visualization --example generate_konata 100000 visualization/static/konata_data.json
+
+    - name: Create release package
+      run: |
+        mkdir -p release_package
+        cp target/release/examples/generate_konata release_package/
+        cp -r visualization/static release_package/static
+
+    - name: Create run script
+      run: |
+        echo '#!/bin/bash' > release_package/run.sh
+        echo 'echo "ARM CPU Emulator - macOS"' >> release_package/run.sh
+        echo 'echo "============================"' >> release_package/run.sh
+        echo 'echo ""' >> release_package/run.sh
+        echo 'echo "Running simulation with 100000 instructions..."' >> release_package/run.sh
+        echo './generate_konata 100000 static/konata_data.json' >> release_package/run.sh
+        echo 'echo ""' >> release_package/run.sh
+        echo 'echo "Simulation complete!"' >> release_package/run.sh
+        echo 'echo ""' >> release_package/run.sh
+        echo 'echo "To view visualization:"' >> release_package/run.sh
+        echo 'echo "  cd static && python3 -m http.server 8080"' >> release_package/run.sh
+        echo 'echo "  Open: http://localhost:8080/konata_data_report.html"' >> release_package/run.sh
+        chmod +x release_package/run.sh
+        chmod +x release_package/generate_konata
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: arm-cpu-emulator-macos
         path: release_package/
         retention-days: 30
