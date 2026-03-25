@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ARM Lock Mechanisms Visualization</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <h1>ARM Lock Mechanisms</h1>
+      <p>ARM架构锁机制分类、使用场景、性能特性与推荐用法可视化</p>
+    </header>
+
+    <!-- Search Bar -->
+    <div class="search-bar">
+      <input
+        type="text"
+        id="search-input"
+        class="search-input"
+        placeholder="搜索锁类型、关键字..."
+      >
+      <div style="display: flex; gap: 8px;">
+        <button class="category-btn" onclick="App.expandAll()">展开全部</button>
+        <button class="category-btn" onclick="App.collapseAll()">折叠全部</button>
+      </div>
+    </div>
+
+    <!-- Category Filters -->
+    <div id="category-filters" class="category-filters"></div>
+
+    <!-- Performance Comparison Section -->
+    <section class="chart-section">
+      <div class="section-header">
+        <h2>性能对比</h2>
+      </div>
+      <p style="color: var(--text-secondary); margin-bottom: 16px; font-size: 13px;">
+        选择不同的锁类型进行性能对比 (最多5个)
+      </p>
+
+      <!-- Lock Selector -->
+      <div class="lock-selector" id="lock-selector">
+        <button class="lock-selector-btn active" data-lock-id="simple-spinlock" onclick="Diagrams.toggleLockSelection('simple-spinlock')">
+          Simple Spinlock
+        </button>
+        <button class="lock-selector-btn active" data-lock-id="futex" onclick="Diagrams.toggleLockSelection('futex')">
+          Futex
+        </button>
+        <button class="lock-selector-btn active" data-lock-id="mcs-spinlock" onclick="Diagrams.toggleLockSelection('mcs-spinlock')">
+          MCS Spinlock
+        </button>
+        <button class="lock-selector-btn" data-lock-id="ticket-spinlock" onclick="Diagrams.toggleLockSelection('ticket-spinlock')">
+          Ticket Spinlock
+        </button>
+        <button class="lock-selector-btn" data-lock-id="mutex" onclick="Diagrams.toggleLockSelection('mutex')">
+          Mutex
+        </button>
+        <button class="lock-selector-btn" data-lock-id="ttas" onclick="Diagrams.toggleLockSelection('ttas')">
+          TTAS
+        </button>
+        <button class="lock-selector-btn" data-lock-id="cas-lock" onclick="Diagrams.toggleLockSelection('cas-lock')">
+          CAS Lock
+        </button>
+        <button class="lock-selector-btn" data-lock-id="local-lock" onclick="Diagrams.toggleLockSelection('local-lock')">
+          Local Lock
+        </button>
+      </div>
+
+      <!-- Radar Chart -->
+      <div class="chart-container" style="margin-top: 20px;">
+        <div class="radar-wrapper">
+          <canvas id="radar-chart" class="radar-canvas"></canvas>
+        </div>
+        <div style="flex: 1; min-width: 300px;">
+          <div style="background: var(--bg-card); border-radius: 16px; padding: 20px; border: 1px solid var(--border-color);">
+            <h3 style="margin: 0 0 12px 0; font-size: 14px;">性能指标说明</h3>
+            <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.8;">
+              <p><strong style="color: var(--primary-blue);">延迟 (Latency)</strong> - 获取锁的速度，越高越快</p>
+              <p><strong style="color: var(--primary-pink);">吞吐量 (Throughput)</strong> - 高并发下的处理能力</p>
+              <p><strong style="color: var(--primary-cyan);">公平性 (Fairness)</strong> - FIFO保证程度</p>
+              <p><strong style="color: var(--primary-orange);">功耗 (Power)</strong> - 能效表现，越高越省电</p>
+              <p><strong style="color: var(--primary-green);">可扩展性 (Scalability)</strong> - 多核/NUMA扩展能力</p>
+            </div>
+          </div>
+
+          <div style="background: var(--bg-card); border-radius: 16px; padding: 20px; border: 1px solid var(--border-color); margin-top: 16px;">
+            <h3 style="margin: 0 0 12px 0; font-size: 14px;">快速选择</h3>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <button class="lock-selector-btn" onclick="Diagrams.selectedLocks=['simple-spinlock','ttas','mcs-spinlock'];Diagrams.updateComparisonChart();Diagrams.updateLockSelectorUI();" style="text-align: left;">
+                自旋锁对比
+              </button>
+              <button class="lock-selector-btn" onclick="Diagrams.selectedLocks=['mutex','futex'];Diagrams.updateComparisonChart();Diagrams.updateLockSelectorUI();" style="text-align: left;">
+                阻塞锁对比
+              </button>
+              <button class="lock-selector-btn" onclick="Diagrams.selectedLocks=['global-lock','local-lock','hierarchical-lock'];Diagrams.updateComparisonChart();Diagrams.updateLockSelectorUI();" style="text-align: left;">
+                层次锁对比
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Decision Tree Section -->
+    <section class="decision-tree-section">
+      <div class="section-header">
+        <h2>锁选择决策树</h2>
+      </div>
+      <div class="decision-tree">
+        <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 13px;">
+          通过回答以下问题，找到最适合您场景的锁类型：
+        </p>
+        <div id="decision-tree"></div>
+      </div>
+    </section>
+
+    <!-- Lock Cards Section -->
+    <section class="locks-section">
+      <div class="section-header">
+        <h2>锁类型详情</h2>
+        <button class="category-btn" onclick="App.exportData()">导出数据</button>
+      </div>
+      <div id="locks-container" class="locks-grid"></div>
+    </section>
+
+    <!-- Footer -->
+    <footer style="text-align: center; padding: 32px 0; color: var(--text-muted); font-size: 12px;">
+      <p>ARM Lock Mechanisms Visualization</p>
+      <p style="margin-top: 8px;">
+        关键字: Ticket Spinlock | Queue Spinlock | ih_queued_spinlock | futex | mutex | pthread_barrier | LockHarmer | shared cache
+      </p>
+    </footer>
+  </div>
+
+  <!-- Scripts -->
+  <script src="data.js"></script>
+  <script src="diagrams.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
