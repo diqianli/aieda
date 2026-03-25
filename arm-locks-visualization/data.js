@@ -40,7 +40,24 @@ function spin_unlock(lock):
       ],
       scenarios: ['极短临界区', '中断上下文', '不可睡眠环境'],
       recommendations: '临界区 < 100 cycles 时使用',
-      metrics: { latency: 5, throughput: 3, fairness: 2, power: 1, scalability: 2 }
+      metrics: { latency: 5, throughput: 3, fairness: 2, power: 1, scalability: 2 },
+      detailedPrinciple: `简单自旋锁是最基础的锁实现之一，其核心思想是"忙等待"（Busy Waiting）。
+
+当一个线程尝试获取锁时，它会不断地检查锁的状态。如果锁被占用，线程会一直循环等待（自旋），直到锁变为可用状态。这种机制完全在用户态完成，不需要内核介入。
+
+在ARMv8架构上，自旋锁通常使用LDXR（Load-Exclusive）和STXR（Store-Exclusive）指令对来实现原子操作。LDXR会标记对内存位置的独占访问，STXR只有在独占标记仍然有效时才能成功写入。
+
+ARMv8.1-A引入了LSE（Large System Extension）原子指令集，如CASAL（Compare-and-Swap Acquire-Release），可以更高效地实现原子操作，减少总线流量。`,
+      useCases: [
+        { scenario: '中断处理程序', description: '在中断上下文中保护共享数据。中断处理程序不能睡眠，因此必须使用自旋锁而非阻塞锁。' },
+        { scenario: '内核态短临界区', description: '保护只需几十个CPU周期的临界区，如修改链表指针或更新计数器。' },
+        { scenario: 'NMI上下文', description: '不可屏蔽中断（NMI）上下文中，连自旋锁都需要特殊处理（raw_spinlock）。' }
+      ],
+      prosAndCons: {
+        pros: ['实现简单，代码量小', '无上下文切换开销', '延迟可预测（无竞争时）', '可在中断上下文使用'],
+        cons: ['浪费CPU周期（忙等待）', '高竞争下性能急剧下降', '功耗高（持续运行CPU）', '可能导致优先级反转']
+      },
+      warnings: ['不要在持有自旋锁时调用可能睡眠的函数', '临界区应尽可能短（建议 < 100 cycles）', '避免在自旋锁临界区内调用其他可能获取锁的函数（死锁风险）']
     },
     {
       id: 'ttas',
@@ -64,7 +81,24 @@ function spin_unlock(lock):
       ],
       scenarios: ['中等竞争场景', '需要减少总线流量'],
       recommendations: '竞争程度中等时优先选择',
-      metrics: { latency: 4, throughput: 4, fairness: 2, power: 2, scalability: 3 }
+      metrics: { latency: 4, throughput: 4, fairness: 2, power: 2, scalability: 3 },
+      detailedPrinciple: `TTAS（Test-Then-Test-And-Set）锁是对简单自旋锁的优化，采用两阶段检查机制。
+
+第一阶段使用普通读取指令检查锁状态，这不会产生缓存一致性流量。只有当发现锁空闲时，才执行第二阶段的原子CAS操作来获取锁。
+
+简单自旋锁每次迭代都执行原子操作，会导致大量的缓存一致性流量（缓存行在多个核心间传递）。TTAS通过先读后原子操作的方式，大幅减少了这种流量。
+
+然而，在高竞争场景下，当多个核心同时发现锁空闲并尝试CAS操作时，仍会产生竞争问题。`,
+      useCases: [
+        { scenario: '中等竞争的短临界区', description: '当竞争程度中等时，TTAS在减少总线流量和获取锁速度之间取得了良好平衡。' },
+        { scenario: 'NUMA系统优化', description: '在NUMA架构中，减少跨节点的缓存一致性流量对性能至关重要。' },
+        { scenario: '缓存敏感场景', description: '当需要减少内存总线压力时，TTAS比简单自旋锁更友好。' }
+      ],
+      prosAndCons: {
+        pros: ['减少缓存一致性流量', '无竞争时性能优秀', '实现相对简单', '比简单自旋锁更高效'],
+        cons: ['高竞争下仍有问题', '不能保证公平性', '仍存在CPU空转']
+      },
+      warnings: ['仍然不能保证公平性', '高竞争时性能会下降', '不适合极长临界区']
     },
     {
       id: 'ticket-spinlock',
@@ -92,7 +126,24 @@ function unlock(l):
       ],
       scenarios: ['需要公平性保证', '中等竞争场景'],
       recommendations: '需要严格FIFO顺序时使用',
-      metrics: { latency: 4, throughput: 3, fairness: 5, power: 3, scalability: 3 }
+      metrics: { latency: 4, throughput: 3, fairness: 5, power: 3, scalability: 3 },
+      detailedPrinciple: `Ticket自旋锁采用类似银行叫号系统的机制，确保FIFO（先进先出）公平性。
+
+锁维护两个计数器：next_ticket（下一个可用票号）和now_serving（当前服务号）。每个请求锁的线程先原子地获取一个票号，然后等待自己的票号被叫到。
+
+由于票号是递增分配的，且获取锁的顺序严格按照票号顺序，因此不会出现饥饿现象。每个等待者最终都能获得锁。
+
+在ARM架构上，可以使用WFE（Wait For Event）指令进入低功耗状态，配合SEV（Send Event）指令唤醒等待者，可以显著降低等待时的功耗。`,
+      useCases: [
+        { scenario: '实时系统', description: '在实时系统中，公平性至关重要。Ticket锁确保所有线程按顺序获取锁，避免饥饿。' },
+        { scenario: '避免线程饥饿', description: '当系统需要保证所有线程都能公平地获取资源时，Ticket锁的FIFO特性非常关键。' },
+        { scenario: '确定性延迟要求', description: '当需要可预测的锁获取延迟时，Ticket锁的有序性提供了保证。' }
+      ],
+      prosAndCons: {
+        pros: ['保证FIFO公平性', '避免线程饥饿', '低功耗等待（WFE）', '延迟可预测'],
+        cons: ['所有等待者轮询同一变量', '缓存行颠簸仍存在', '票号可能溢出（需要特殊处理）']
+      },
+      warnings: ['票号变量可能溢出，需要使用足够大的整数类型', '所有等待者仍轮询同一变量，存在缓存行颠簸', '不适合极高竞争场景（考虑MCS）']
     },
     {
       id: 'mcs-spinlock',
@@ -132,7 +183,24 @@ function unlock(l, node):
       ],
       scenarios: ['高竞争场景', '多核/NUMA系统'],
       recommendations: '高竞争、多核系统首选',
-      metrics: { latency: 3, throughput: 5, fairness: 5, power: 4, scalability: 5 }
+      metrics: { latency: 3, throughput: 5, fairness: 5, power: 4, scalability: 5 },
+      detailedPrinciple: `MCS（Mellor-Crummey and Scott）队列自旋锁是一种可扩展的公平锁实现。
+
+每个等待者在自己的本地节点上自旋，而不是在全局变量上自旋。等待者通过链表连接，形成一个队列。这彻底消除了缓存行颠簸问题。
+
+在NUMA系统中，不同CPU节点的内存访问延迟不同。MCS锁让每个CPU在自己的本地变量上自旋，避免了跨节点的缓存一致性流量。
+
+Linux内核的ih_queued_spinlock就是基于MCS设计的，是多核系统中的关键同步原语。`,
+      useCases: [
+        { scenario: '高竞争多核系统', description: '当大量CPU核心竞争同一把锁时，MCS的本地自旋特性可以显著提升性能。' },
+        { scenario: 'NUMA架构服务器', description: '在多插槽服务器中，MCS避免了跨插槽的缓存行颠簸，是Linux内核的首选。' },
+        { scenario: '数据库系统', description: '高并发的数据库系统常用MCS类锁来保护关键数据结构。' }
+      ],
+      prosAndCons: {
+        pros: ['本地自旋，无缓存颠簸', '极佳的NUMA可扩展性', '保证公平性（FIFO）', '高竞争下性能优异'],
+        cons: ['实现复杂', '每个CPU需要节点内存', '低竞争时有额外开销', '代码体积较大']
+      },
+      warnings: ['必须确保节点内存在锁持有期间保持有效', '每CPU需要预分配节点', '低竞争时额外开销可能不值得']
     },
     {
       id: 'array-spinlock',
@@ -193,7 +261,24 @@ function mutex_unlock(m):
       ],
       scenarios: ['临界区较长', '可能阻塞', '低竞争'],
       recommendations: '临界区 > 1000 cycles 或可能阻塞时使用',
-      metrics: { latency: 2, throughput: 4, fairness: 4, power: 5, scalability: 4 }
+      metrics: { latency: 2, throughput: 4, fairness: 4, power: 5, scalability: 4 },
+      detailedPrinciple: `互斥锁（Mutex）是一种阻塞锁，当竞争发生时会让出CPU，由内核调度其他线程。
+
+与自旋锁不同，mutex在获取失败时不会忙等待，而是将当前线程加入等待队列，然后触发上下文切换让出CPU。当锁释放时，内核会唤醒等待队列中的一个线程。
+
+mutex的实现需要与内核调度器紧密配合。在Linux中，这通过futex系统调用实现，内核负责管理等待队列和线程唤醒。
+
+实时系统中常用带优先级继承的mutex（PI mutex），防止优先级反转问题。当高优先级线程等待低优先级线程持有的锁时，低优先级线程会临时继承高优先级。`,
+      useCases: [
+        { scenario: '长临界区', description: '当临界区可能执行较长时间（如文件I/O、网络操作）时，使用mutex让其他线程有机会运行。' },
+        { scenario: '可能阻塞的操作', description: '如果临界区内可能发生阻塞（如等待I/O、内存分配），必须使用mutex而非自旋锁。' },
+        { scenario: '用户态应用', description: '大多数用户态多线程程序使用pthread_mutex，底层就是mutex实现。' }
+      ],
+      prosAndCons: {
+        pros: ['不浪费CPU（阻塞等待）', '适合长临界区', '支持优先级继承', '低竞争时效率高'],
+        cons: ['上下文切换开销大（µs级）', '内核-用户态切换开销', '不适合短临界区', '不能在中断上下文使用']
+      },
+      warnings: ['不能在中断上下文使用', '临界区过长会影响系统响应性', '注意优先级反转问题（使用PI mutex）']
     },
     {
       id: 'futex',
@@ -226,7 +311,27 @@ function futex_unlock(futex):
       ],
       scenarios: ['通用场景', '竞争不确定'],
       recommendations: '竞争不确定时的首选',
-      metrics: { latency: 4, throughput: 4, fairness: 3, power: 4, scalability: 4 }
+      metrics: { latency: 4, throughput: 4, fairness: 3, power: 4, scalability: 4 },
+      detailedPrinciple: `Futex（Fast Userspace Mutex）是Linux特有的高效同步原语，结合了自旋锁和阻塞锁的优点。
+
+无竞争时完全在用户态完成，使用原子操作快速获取锁（约10-20 cycles）。只有在竞争发生时才调用futex(2)系统调用进入内核态。
+
+状态值含义：
+- 0: 锁空闲
+- 1: 锁被持有，无等待者
+- 2: 锁被持有，有等待者
+
+在低竞争场景下性能接近自旋锁，在高竞争场景下能避免CPU空转。glibc的pthread_mutex底层就是基于futex实现的，因此是通用场景的最佳选择。`,
+      useCases: [
+        { scenario: '通用多线程程序', description: 'Futex是pthread_mutex的底层实现，适用于大多数用户态同步场景。' },
+        { scenario: '竞争不确定的场景', description: '当无法预知锁竞争程度时，futex的自适应特性使其成为最安全的选择。' },
+        { scenario: '高性能服务器', description: '现代高性能服务器应用广泛使用基于futex的同步原语。' }
+      ],
+      prosAndCons: {
+        pros: ['无竞争时极快（~10-20 cycles）', '自适应竞争程度', '通用性最佳', 'pthread_mutex底层实现'],
+        cons: ['Linux特有（非标准）', '竞争时系统调用开销', '实现细节复杂']
+      },
+      warnings: ['是Linux特有接口，移植性考虑', '状态值管理复杂，容易出错', '直接使用futex(2)需要小心处理边界情况']
     },
 
     // ========== 原子操作类 ==========

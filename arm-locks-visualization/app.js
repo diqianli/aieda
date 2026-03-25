@@ -232,6 +232,16 @@ const App = {
       </div>
     `;
 
+    // View Details Button
+    html += `
+      <div class="section">
+        <a href="lock-detail.html?id=${lock.id}" class="view-details-btn">
+          <span>查看完整详情</span>
+          <span class="btn-icon">→</span>
+        </a>
+      </div>
+    `;
+
     return html;
   },
 

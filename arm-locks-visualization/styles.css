@@ -336,6 +336,10 @@ body::after {
   line-height: 1.6;
   color: #a8b2c3;
   border: 1px solid rgba(255, 255, 255, 0.06);
+  white-space: pre-wrap;
+  tab-size: 4;
+  -moz-tab-size: 4;
+  word-break: break-word;
 }
 
 .code-block .keyword {
@@ -768,4 +772,35 @@ body::after {
   padding: 12px;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 10px;
+}
+
+/* View Details Button */
+.view-details-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--primary-blue), var(--primary-cyan));
+  color: white;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  margin-top: 8px;
+}
+
+.view-details-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(42, 113, 255, 0.3);
+}
+
+.view-details-btn .btn-icon {
+  font-size: 16px;
+  transition: transform 0.2s ease;
+}
+
+.view-details-btn:hover .btn-icon {
+  transform: translateX(4px);
 }

@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lock Detail - ARM Lock Mechanisms</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* Detail page specific styles */
+    .detail-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 32px;
+      padding: 20px;
+      background: linear-gradient(140deg, var(--bg-card), rgba(18, 19, 28, 0.55));
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      backdrop-filter: blur(18px);
+      flex-wrap: wrap;
+    }
+
+    .back-button {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+
+    .back-button:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: var(--text-primary);
+    }
+
+    .back-icon {
+      font-size: 18px;
+    }
+
+    .lock-title-area {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .lock-title-area h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 600;
+      background: linear-gradient(135deg, var(--primary-blue), var(--primary-cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .lock-title-area .name-en {
+      font-size: 14px;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    /* Detail sections */
+    .detail-section {
+      background: linear-gradient(140deg, var(--bg-card), rgba(18, 19, 28, 0.55));
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      backdrop-filter: blur(18px);
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+
+    .detail-section .section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 20px;
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .section-icon {
+      font-size: 18px;
+    }
+
+    .detail-section .section-content {
+      padding: 20px;
+    }
+
+    /* Principle text */
+    .principle-text {
+      font-size: 14px;
+      line-height: 1.8;
+      color: var(--text-secondary);
+    }
+
+    .principle-text p {
+      margin: 0 0 16px 0;
+    }
+
+    .principle-text strong {
+      color: var(--text-primary);
+    }
+
+    /* Use cases grid */
+    .use-cases-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .use-case-card {
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .use-case-title {
+      margin: 0 0 8px 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--primary-blue);
+    }
+
+    .use-case-desc {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text-secondary);
+    }
+
+    .use-case-code {
+      margin: 12px 0 0 0;
+      padding: 10px 12px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+      font-family: "SF Mono", "Monaco", monospace;
+      font-size: 11px;
+      color: var(--text-muted);
+      overflow-x: auto;
+      white-space: pre-wrap;
+    }
+
+    /* Pros and cons */
+    .pros-cons-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+    }
+
+    .pros-card, .cons-card {
+      padding: 16px;
+      border-radius: 12px;
+    }
+
+    .pros-card {
+      background: rgba(52, 199, 89, 0.08);
+      border: 1px solid rgba(52, 199, 89, 0.2);
+    }
+
+    .cons-card {
+      background: rgba(255, 0, 138, 0.08);
+      border: 1px solid rgba(255, 0, 138, 0.2);
+    }
+
+    .pros-title, .cons-title {
+      margin: 0 0 12px 0;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .pros-title {
+      color: var(--primary-green);
+    }
+
+    .cons-title {
+      color: var(--primary-pink);
+    }
+
+    .pros-list, .cons-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .pros-list li, .cons-list li {
+      position: relative;
+      padding-left: 20px;
+      margin-bottom: 8px;
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text-secondary);
+    }
+
+    .pros-list li::before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: var(--primary-green);
+    }
+
+    .cons-list li::before {
+      content: "✗";
+      position: absolute;
+      left: 0;
+      color: var(--primary-pink);
+    }
+
+    /* ARM implementation */
+    .arm-impl-text {
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+    }
+
+    .instruction-example {
+      margin-top: 16px;
+    }
+
+    .instruction-example h4 {
+      margin: 0 0 8px 0;
+      font-size: 13px;
+      color: var(--primary-cyan);
+    }
+
+    .asm-code {
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-family: "SF Mono", "Monaco", monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      color: #a8b2c3;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    /* Performance points */
+    .performance-points-detailed {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .performance-points-detailed li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .performance-points-detailed li:last-child {
+      border-bottom: none;
+    }
+
+    .point-bullet {
+      color: var(--primary-orange);
+      font-size: 14px;
+    }
+
+    .point-text {
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--text-secondary);
+    }
+
+    /* Warnings */
+    .warning-section .section-title {
+      color: var(--primary-orange);
+    }
+
+    .warnings-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .warnings-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px;
+      margin-bottom: 8px;
+      background: rgba(255, 149, 0, 0.08);
+      border-radius: 10px;
+      border-left: 3px solid var(--primary-orange);
+    }
+
+    .warning-icon {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--primary-orange);
+      color: white;
+      border-radius: 50%;
+      font-size: 12px;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    .warning-text {
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text-secondary);
+    }
+
+    /* Keywords */
+    .keywords {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .keyword {
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-size: 12px;
+      background: rgba(42, 113, 255, 0.15);
+      color: var(--primary-blue);
+      font-family: monospace;
+    }
+
+    /* Radar chart area */
+    .chart-area {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .radar-chart-wrapper {
+      flex: 0 0 300px;
+    }
+
+    .radar-chart-canvas {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 16px;
+      background: linear-gradient(140deg, var(--bg-card), rgba(18, 19, 28, 0.55));
+      border: 1px solid var(--border-color);
+    }
+
+    .metrics-detail {
+      flex: 1;
+      min-width: 250px;
+    }
+
+    .metric-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .metric-item:last-child {
+      border-bottom: none;
+    }
+
+    .metric-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+    }
+
+    .metric-name {
+      width: 80px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .metric-bar {
+      flex: 1;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .metric-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+
+    .metric-value {
+      width: 40px;
+      text-align: right;
+      font-size: 13px;
+      color: var(--text-primary);
+    }
+
+    /* Related locks */
+    #related-locks {
+      margin-top: 32px;
+    }
+
+    #related-locks .section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: var(--text-primary);
+    }
+
+    .related-locks-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .related-lock-card {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 16px;
+      background: linear-gradient(140deg, var(--bg-card), rgba(18, 19, 28, 0.55));
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+
+    .related-lock-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--primary-blue);
+    }
+
+    .related-lock-card h3 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .related-lock-card .name-en {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Error message */
+    .error-message {
+      text-align: center;
+      padding: 48px;
+    }
+
+    .error-message h2 {
+      color: var(--primary-pink);
+      margin-bottom: 16px;
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 10px 20px;
+      background: var(--primary-blue);
+      color: white;
+      text-decoration: none;
+      border-radius: 10px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .detail-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .lock-title-area {
+        order: -1;
+        width: 100%;
+      }
+
+      .use-cases-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .pros-cons-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .chart-area {
+        flex-direction: column;
+      }
+
+      .radar-chart-wrapper {
+        flex: none;
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header will be dynamically populated -->
+    <header id="lock-header" class="detail-header">
+      <!-- Loading state -->
+      <div class="lock-title-area">
+        <h1>加载中...</h1>
+      </div>
+    </header>
+
+    <!-- Radar Chart Section -->
+    <section class="detail-section">
+      <h2 class="section-title">
+        <span class="section-icon">📊</span>
+        性能雷达图
+      </h2>
+      <div class="section-content">
+        <div class="chart-area">
+          <div class="radar-chart-wrapper">
+            <canvas id="detail-radar-chart" class="radar-chart-canvas"></canvas>
+          </div>
+          <div id="metrics-detail" class="metrics-detail">
+            <!-- Will be populated by JS -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Content -->
+    <main id="lock-content">
+      <!-- Content will be dynamically populated -->
+    </main>
+
+    <!-- Related Locks -->
+    <section id="related-locks">
+      <!-- Will be populated by JS -->
+    </section>
+
+    <!-- Footer -->
+    <footer style="text-align: center; padding: 32px 0; color: var(--text-muted); font-size: 12px;">
+      <p><a href="index.html" style="color: var(--primary-blue); text-decoration: none;">← 返回锁类型列表</a></p>
+    </footer>
+  </div>
+
+  <!-- Scripts -->
+  <script src="data.js"></script>
+  <script src="detail.js"></script>
+  <script>
+    // Populate metrics detail after page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(function() {
+        const lockId = DetailPage.getLockIdFromURL();
+        if (lockId) {
+          const lock = LockData.locks.find(l => l.id === lockId);
+          if (lock && lock.metrics) {
+            const metricsDetail = document.getElementById('metrics-detail');
+            if (metricsDetail) {
+              const metricInfo = [
+                { key: 'latency', label: '延迟', color: '#2a71ff', desc: '获取锁的速度，越高越快' },
+                { key: 'throughput', label: '吞吐量', color: '#ff008a', desc: '高并发下的处理能力' },
+                { key: 'fairness', label: '公平性', color: '#00d1ff', desc: 'FIFO保证程度' },
+                { key: 'power', label: '功耗', color: '#ff9500', desc: '能效表现，越高越省电' },
+                { key: 'scalability', label: '可扩展性', color: '#34c759', desc: '多核/NUMA扩展能力' }
+              ];
+
+              metricsDetail.innerHTML = metricInfo.map(info => {
+                const value = lock.metrics[info.key] || 0;
+                const width = (value / 5) * 100;
+                return `
+                  <div class="metric-item">
+                    <span class="metric-color" style="background: ${info.color}"></span>
+                    <span class="metric-name">${info.label}</span>
+                    <div class="metric-bar">
+                      <div class="metric-fill" style="width: ${width}%; background: ${info.color}"></div>
+                    </div>
+                    <span class="metric-value">${value}/5</span>
+                  </div>
+                `;
+              }).join('');
+            }
+          }
+        }
+      }, 100);
+    });
+  </script>
+</body>
+</html>
