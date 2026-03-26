@@ -39,7 +39,7 @@ jobs:
       run: |
         mkdir release_package
         copy target\release\examples\cpu_emulator.exe release_package\
-        xcopy visualization\static release_package\static\ /E /I /Y
+        copy test_programs\fibonacci.elf release_package\sample.elf
 
     - name: Create run.bat
       shell: pwsh
@@ -50,10 +50,12 @@ jobs:
         echo   ARM CPU Emulator - Windows
         echo ============================================
         echo.
-        echo Running simulation...
-        cpu_emulator.exe 10000 static\konata_data.json
+        echo Usage: cpu_emulator.exe ^<elf_file^> [max_instructions] [output.json]
         echo.
-        echo Done! Open static\konata_data_report.html
+        echo Running sample simulation...
+        cpu_emulator.exe sample.elf 10000
+        echo.
+        echo Done! Open sample_report.html to view results.
         pause
         "@
         Set-Content -Path "release_package\run.bat" -Value $batContent -NoNewline
@@ -92,14 +94,23 @@ jobs:
       run: |
         mkdir -p release_package
         cp target/release/examples/cpu_emulator release_package/
-        cp -r visualization/static release_package/static
+        cp test_programs/fibonacci.elf release_package/sample.elf
 
     - name: Create run.sh
       run: |
-        echo '#!/bin/bash' > release_package/run.sh
-        echo 'echo "ARM CPU Emulator - Linux"' >> release_package/run.sh
-        echo './cpu_emulator 10000 static/konata_data.json' >> release_package/run.sh
-        echo 'echo "Done! Open static/konata_data_report.html"' >> release_package/run.sh
+        cat > release_package/run.sh << 'EOF'
+        #!/bin/bash
+        echo "============================================"
+        echo "  ARM CPU Emulator - Linux"
+        echo "============================================"
+        echo ""
+        echo "Usage: ./cpu_emulator <elf_file> [max_instructions] [output.json]"
+        echo ""
+        echo "Running sample simulation..."
+        ./cpu_emulator sample.elf 10000
+        echo ""
+        echo "Done! Open sample_report.html to view results."
+        EOF
         chmod +x release_package/run.sh release_package/cpu_emulator
 
     - name: Upload artifact
@@ -130,21 +141,30 @@ jobs:
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
     - name: Build example
-      run: cargo build --release --example generate_konata --features visualization
+      run: cargo build --release --example cpu_emulator --features visualization
 
     - name: Create package
       run: |
         mkdir -p release_package
-        cp target/release/examples/generate_konata release_package/
-        cp -r visualization/static release_package/static
+        cp target/release/examples/cpu_emulator release_package/
+        cp test_programs/fibonacci.elf release_package/sample.elf
 
     - name: Create run.sh
       run: |
-        echo '#!/bin/bash' > release_package/run.sh
-        echo 'echo "ARM CPU Emulator - macOS"' >> release_package/run.sh
-        echo './generate_konata 10000 static/konata_data.json' >> release_package/run.sh
-        echo 'echo "Done! Open static/konata_data_report.html"' >> release_package/run.sh
-        chmod +x release_package/run.sh release_package/generate_konata
+        cat > release_package/run.sh << 'EOF'
+        #!/bin/bash
+        echo "============================================"
+        echo "  ARM CPU Emulator - macOS"
+        echo "============================================"
+        echo ""
+        echo "Usage: ./cpu_emulator <elf_file> [max_instructions] [output.json]"
+        echo ""
+        echo "Running sample simulation..."
+        ./cpu_emulator sample.elf 10000
+        echo ""
+        echo "Done! Open sample_report.html to view results."
+        EOF
+        chmod +x release_package/run.sh release_package/cpu_emulator
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4

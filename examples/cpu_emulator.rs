@@ -1,49 +1,230 @@
-//! Generate Konata JSON from demo instructions
+//! ARM CPU Emulator - Run ELF executable and export Konata visualization
 //!
-//! Usage: cargo run --features visualization --example generate_konata [num_instructions] [output.json]
+//! Usage: cpu_emulator <elf_file> [max_instructions] [output.json]
+//!
+//! This program:
+//! 1. Loads an ELF executable (AArch64)
+//! 2. Runs CPU simulation with out-of-order execution
+//! 3. Exports Konata JSON for pipeline visualization
+//! 4. Generates TopDown performance analysis report
 
 use arm_cpu_emulator::{
-    types::{OpcodeType, Reg},
-    CPUConfig, CPUEmulator, InstructionSource, TraceInput,
+    elf::{ElfLoader, Arm64Decoder},
+    types::{Instruction, InstructionId},
+    CPUConfig, CPUEmulator, InstructionSource, PerformanceMetrics,
 };
 
 #[cfg(feature = "visualization")]
-use arm_cpu_emulator::visualization::{KonataLane, KonataOp, KonataStage};
+use arm_cpu_emulator::visualization::KonataOp;
 
+use std::path::PathBuf;
 use std::fs::File;
-use std::io::{BufWriter, Write};
+use std::io::Write;
 
-/// Default number of instructions
-const DEFAULT_INSTRUCTIONS: u64 = 500;
+/// Default maximum instructions to simulate
+const DEFAULT_MAX_INSTRUCTIONS: u64 = 10000;
+
+/// Instruction source from ELF file
+struct ElfInstructionSource {
+    loader: ElfLoader,
+    decoder: Arm64Decoder,
+    pc: u64,
+    end_pc: u64,
+    count: u64,
+    max_count: u64,
+}
+
+impl ElfInstructionSource {
+    fn new(loader: ElfLoader, max_count: u64) -> Self {
+        let entry = loader.entry_point();
+
+        // Find end of code segment
+        let end_pc = loader.segments()
+            .iter()
+            .filter(|s| s.executable)
+            .map(|s| s.vaddr + s.size as u64)
+            .max()
+            .unwrap_or(entry + 0x1000);
+
+        Self {
+            loader,
+            decoder: Arm64Decoder::new(),
+            pc: entry,
+            end_pc,
+            count: 0,
+            max_count,
+        }
+    }
+}
+
+impl Iterator for ElfInstructionSource {
+    type Item = arm_cpu_emulator::types::Result<Instruction>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.count >= self.max_count || self.pc >= self.end_pc {
+            return None;
+        }
+
+        // Read instruction at current PC
+        match self.loader.read_instruction(self.pc) {
+            Some(raw) => {
+                let decoded = self.decoder.decode(self.pc, raw);
+
+                // Build instruction
+                let mut instr = Instruction::new(
+                    InstructionId(self.count),
+                    self.pc,
+                    raw,
+                    decoded.opcode,
+                );
+
+                // Add registers
+                for reg in decoded.src_regs.clone() {
+                    instr = instr.with_src_reg(reg);
+                }
+                for reg in decoded.dst_regs.clone() {
+                    instr = instr.with_dst_reg(reg);
+                }
+
+                // Add disassembly
+                instr = instr.with_disasm(decoded.disasm.clone());
+
+                // Handle memory operations
+                if decoded.mem_addr.is_some() {
+                    let addr = decoded.mem_addr.unwrap_or(0x10000 + self.count * 64);
+                    instr = instr.with_mem_access(addr, decoded.mem_size.unwrap_or(8), decoded.is_load);
+                }
+
+                // Handle branches
+                if let Some(target) = decoded.branch_target {
+                    instr = instr.with_branch(target, decoded.is_conditional, false);
+                }
+
+                self.pc += 4;
+                self.count += 1;
+
+                Some(Ok(instr))
+            }
+            None => None,
+        }
+    }
+}
+
+impl InstructionSource for ElfInstructionSource {
+    fn total_count(&self) -> Option<usize> {
+        Some(self.max_count as usize)
+    }
+
+    fn reset(&mut self) -> arm_cpu_emulator::types::Result<()> {
+        self.pc = self.loader.entry_point();
+        self.count = 0;
+        Ok(())
+    }
+}
 
 #[cfg(feature = "visualization")]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     use std::env;
+    use arm_cpu_emulator::visualization::KonataOp;
 
     // Parse arguments
     let args: Vec<String> = env::args().collect();
-    let num_instructions = args
-        .get(1)
+    if args.len() < 2 {
+        println!("============================================");
+        println!("  ARM CPU Emulator - AArch64");
+        println!("============================================");
+        println!();
+        println!("Usage: cpu_emulator <elf_file> [max_instructions] [output.json]");
+        println!();
+        println!("Arguments:");
+        println!("  elf_file         Path to ELF executable (AArch64)");
+        println!("  max_instructions Maximum instructions to simulate (default: {})", DEFAULT_MAX_INSTRUCTIONS);
+        println!("  output.json      Output Konata JSON path (default: konata_data.json)");
+        println!();
+        println!("Examples:");
+        println!("  cpu_emulator program.elf");
+        println!("  cpu_emulator program.elf 50000");
+        println!("  cpu_emulator program.elf 100000 output.json");
+        println!();
+        std::process::exit(0);
+    }
+
+    let elf_path = PathBuf::from(&args[1]);
+    let max_instructions = args.get(2)
         .and_then(|s| s.parse().ok())
-        .unwrap_or(DEFAULT_INSTRUCTIONS);
-    let output_path = args
-        .get(2)
+        .unwrap_or(DEFAULT_MAX_INSTRUCTIONS);
+
+    // Determine output path
+    let output_path = args.get(3)
         .cloned()
-        .unwrap_or_else(|| "visualization/static/konata_data.json".to_string());
+        .unwrap_or_else(|| {
+            // Default: same directory as ELF, with .json extension
+            let mut path = elf_path.clone();
+            path.set_extension("json");
+            path.to_string_lossy().to_string()
+        });
 
-    println!("=== Konata Data Generator ===");
-    println!("Instructions: {}", num_instructions);
-    println!("Output file: {}", output_path);
+    // Derive additional output paths
+    let topdown_path = output_path.replace(".json", "_topdown.json");
+    let report_path = output_path.replace(".json", "_report.html");
 
-    // Create visualization configuration with minimal snapshots
+    println!("============================================");
+    println!("  ARM CPU Emulator");
+    println!("============================================");
+    println!();
+    println!("ELF file: {:?}", elf_path);
+    println!("Max instructions: {}", max_instructions);
+    println!("Output: {}", output_path);
+    println!();
+
+    // Load ELF file
+    let loader = match ElfLoader::load(&elf_path) {
+        Ok(l) => l,
+        Err(e) => {
+            eprintln!("[ERROR] Failed to load ELF: {:?}", e);
+            std::process::exit(1);
+        }
+    };
+
+    // Show ELF info
+    println!("--- ELF Info ---");
+    println!("Entry point: {:#X}", loader.entry_point());
+    println!("Segments: {}", loader.segments().len());
+
+    for (i, seg) in loader.segments().iter().enumerate() {
+        let flags = match (seg.executable, seg.writable) {
+            (true, true) => "RWX",
+            (true, false) => "R-X",
+            (false, true) => "RW-",
+            (false, false) => "R--",
+        };
+        println!("  Segment {}: {:#X}-{:#X} ({})", i, seg.vaddr, seg.vaddr + seg.size as u64, flags);
+    }
+
+    // Show first few instructions
+    println!();
+    println!("--- Instructions (first 10) ---");
+    let decoder = Arm64Decoder::new();
+    let mut pc = loader.entry_point();
+    for _ in 0..10 {
+        if let Some(raw) = loader.read_instruction(pc) {
+            let decoded = decoder.decode(pc, raw);
+            println!("{:#X}: {}", pc, decoded.disasm);
+            pc += 4;
+        } else {
+            break;
+        }
+    }
+
+    // Create visualization configuration
     let viz_config = arm_cpu_emulator::VisualizationConfig {
         enabled: true,
         port: 3000,
-        max_snapshots: 10, // Keep few snapshots - we use pipeline_tracker directly
+        max_snapshots: 100000,
         animation_speed: 10,
     };
 
-    // Create CPU emulator with visualization
+    // Create CPU emulator
     let config = CPUConfig {
         window_size: 256,
         issue_width: 6,
@@ -52,238 +233,111 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ..Default::default()
     };
 
-    let mut cpu = CPUEmulator::with_visualization(config.clone(), viz_config)?;
+    let mut cpu = CPUEmulator::with_visualization(config, viz_config.clone())?;
 
-    // Create instruction trace
-    let mut input = TraceInput::new();
+    // Create instruction source from ELF
+    let mut source = ElfInstructionSource::new(loader, max_instructions);
 
-    println!("\n--- Creating Instruction Trace ---");
-    for i in 0..num_instructions {
-        let pc = 0x1000 + i as u64 * 4;
+    println!();
+    println!("--- Running Simulation ---");
 
-        // Mix of different instruction types
-        match i % 5 {
-            0 => {
-                // ADD with dependency chain
-                input
-                    .builder(pc, OpcodeType::Add)
-                    .src_reg(Reg((i % 30) as u8))
-                    .src_reg(Reg(((i + 1) % 30) as u8))
-                    .dst_reg(Reg(((i + 2) % 30) as u8))
-                    .disasm(format!(
-                        "ADD X{}, X{}, X{}",
-                        (i + 2) % 30,
-                        i % 30,
-                        (i + 1) % 30
-                    ))
-                    .build();
-            }
-            1 => {
-                // LOAD instruction
-                let addr = 0x2000 + (i as u64 * 64);
-                input
-                    .builder(pc, OpcodeType::Load)
-                    .dst_reg(Reg((i % 30) as u8))
-                    .mem_access(addr, 8, true)
-                    .disasm(format!("LDR X{}, [X{}, #{}]", i % 30, 31, addr))
-                    .build();
-            }
-            2 => {
-                // MUL instruction (higher latency)
-                input
-                    .builder(pc, OpcodeType::Mul)
-                    .src_reg(Reg((i % 30) as u8))
-                    .src_reg(Reg(((i + 1) % 30) as u8))
-                    .dst_reg(Reg(((i + 2) % 30) as u8))
-                    .disasm(format!(
-                        "MUL X{}, X{}, X{}",
-                        (i + 2) % 30,
-                        i % 30,
-                        (i + 1) % 30
-                    ))
-                    .build();
-            }
-            3 => {
-                // STORE instruction
-                let addr = 0x3000 + (i as u64 * 64);
-                input
-                    .builder(pc, OpcodeType::Store)
-                    .src_reg(Reg((i % 30) as u8))
-                    .mem_access(addr, 8, false)
-                    .disasm(format!("STR X{}, [X{}, #{}]", i % 30, 31, addr))
-                    .build();
-            }
-            _ => {
-                // SUB instruction
-                input
-                    .builder(pc, OpcodeType::Sub)
-                    .src_reg(Reg((i % 30) as u8))
-                    .src_reg(Reg(((i + 1) % 30) as u8))
-                    .dst_reg(Reg(((i + 2) % 30) as u8))
-                    .disasm(format!(
-                        "SUB X{}, X{}, X{}",
-                        (i + 2) % 30,
-                        i % 30,
-                        (i + 1) % 30
-                    ))
-                    .build();
+    // Run simulation
+    let start_time = std::time::Instant::now();
+    let result = cpu.run(&mut source);
+    let elapsed = start_time.elapsed();
+
+    let stats = match result {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("[ERROR] Simulation failed: {:?}", e);
+            std::process::exit(1);
+        }
+    };
+
+    println!();
+    println!("--- Results ---");
+    println!("Time: {:.2}s", elapsed.as_secs_f64());
+    println!("Total cycles: {}", stats.total_cycles);
+    println!("Instructions: {}", stats.total_instructions);
+    println!("IPC: {:.2}", stats.ipc);
+
+    // Export Konata JSON
+    println!();
+    println!("--- Exporting Konata Data ---");
+
+    let cpu_viz = cpu.visualization();
+    let konata_snapshots = cpu_viz.konata_snapshots();
+
+    // Merge all snapshots
+    let mut all_ops: Vec<KonataOp> = Vec::new();
+    let mut last_cycle = 0u64;
+    let mut last_committed = 0u64;
+
+    for snapshot in konata_snapshots {
+        last_cycle = snapshot.cycle;
+        last_committed = snapshot.committed_count;
+
+        for op in &snapshot.ops {
+            if !all_ops.iter().any(|o| o.id == op.id) {
+                all_ops.push(op.clone());
             }
         }
     }
 
-    println!("Created {} instructions", num_instructions);
+    all_ops.sort_by_key(|op| op.id);
 
-    // Run simulation
-    println!("\n--- Running Simulation ---");
-    let start_time = std::time::Instant::now();
-    let result = cpu.run(&mut input);
-    let elapsed = start_time.elapsed();
-
-    let stats = result?;
-    println!("Time: {:.2}s", elapsed.as_secs_f64());
-    println!("Total cycles: {}", stats.total_cycles);
-    println!("Instructions committed: {}", stats.total_instructions);
-    println!("IPC: {:.2}", stats.ipc);
-
-    // Export Konata data directly from pipeline_tracker (memory efficient)
-    println!("\n--- Exporting Konata Data ---");
-    let tracker = cpu.pipeline_tracker();
-    println!("Tracked {} instructions", tracker.len());
-
-    // Build Konata ops directly from pipeline tracker
-    let all_ops = build_konata_ops_from_tracker(tracker);
-    println!("Generated {} operations", all_ops.len());
-
-    // Generate TopDown analysis report
-    println!("\n--- Generating TopDown Analysis ---");
-    let topdown_report = generate_topdown_report(tracker, &stats, &config);
-    println!("TopDown Analysis Generated");
-
-    // Create final export
+    // Export Konata JSON
     let export = KonataExport {
         version: "1.0".to_string(),
-        total_cycles: stats.total_cycles,
-        total_instructions: stats.total_instructions,
+        total_cycles: last_cycle,
+        total_instructions: last_committed,
         ops_count: all_ops.len(),
         ops: all_ops,
     };
 
-    // Write Konata JSON
-    let file = File::create(&output_path)?;
-    let mut writer = BufWriter::new(file);
-    serde_json::to_writer_pretty(&mut writer, &export)?;
-    writer.flush()?;
+    let json = serde_json::to_string_pretty(&export)?;
+    let mut file = File::create(&output_path)?;
+    file.write_all(json.as_bytes())?;
+    println!("Konata JSON: {} ({} ops)", output_path, export.ops_count);
 
-    println!("Exported {} operations to {}", export.ops_count, output_path);
+    // Generate TopDown analysis
+    println!();
+    println!("--- TopDown Analysis ---");
 
-    // Write TopDown JSON
-    let topdown_json_path = output_path.replace(".json", "_topdown.json");
-    let topdown_file = File::create(&topdown_json_path)?;
-    let mut topdown_writer = BufWriter::new(topdown_file);
-    serde_json::to_writer_pretty(&mut topdown_writer, &topdown_report)?;
-    topdown_writer.flush()?;
-    println!("TopDown report exported to {}", topdown_json_path);
+    let topdown = generate_topdown_analysis(&stats, last_cycle);
 
-    // Generate HTML visualization
-    let html_path = output_path.replace(".json", "_report.html");
-    let html_content = generate_html_report(&topdown_report, &output_path, &topdown_json_path);
-    let mut html_file = File::create(&html_path)?;
-    html_file.write_all(html_content.as_bytes())?;
-    println!("HTML report exported to {}", html_path);
+    // Export TopDown JSON
+    let topdown_json = serde_json::to_string_pretty(&topdown)?;
+    let mut file = File::create(&topdown_path)?;
+    file.write_all(topdown_json.as_bytes())?;
+    println!("TopDown JSON: {}", topdown_path);
 
-    println!("\n=== Export Complete ===");
-    println!("To view the visualization:");
-    println!("1. Start HTTP server: cd visualization && python3 -m http.server 8080");
-    println!("2. Open http://localhost:8080/static/index_static.html");
-    println!("3. For TopDown analysis: open http://localhost:8080/static/konata_data_report.html");
+    // Generate HTML report
+    let html = generate_html_report(&topdown, &stats);
+    let mut file = File::create(&report_path)?;
+    file.write_all(html.as_bytes())?;
+    println!("HTML Report: {}", report_path);
+
+    println!();
+    println!("============================================");
+    println!("  Complete!");
+    println!("============================================");
+    println!();
+    println!("To view visualization:");
+    println!("  1. cd {}", PathBuf::from(&output_path).parent().unwrap_or(&PathBuf::from(".")).display());
+    println!("  2. python -m http.server 8080");
+    println!("  3. Open http://localhost:8080/{}_report.html", PathBuf::from(&output_path).file_stem().unwrap_or_default().to_string_lossy());
 
     Ok(())
 }
 
-/// Build Konata operations directly from the pipeline tracker
-#[cfg(feature = "visualization")]
-fn build_konata_ops_from_tracker(
-    tracker: &arm_cpu_emulator::visualization::PipelineTracker,
-) -> Vec<KonataOp> {
-    let mut ops: Vec<KonataOp> = Vec::new();
-    let timings = tracker.get_all_timings();
-    let viz_id_map = tracker.get_all_viz_ids();
-    let dependencies = tracker.get_all_dependencies();
-    let disasm_map = tracker.get_all_disasm();
-    let src_regs_map = tracker.get_all_src_regs();
-    let dst_regs_map = tracker.get_all_dst_regs();
-    let mem_access_map = tracker.get_all_mem_access();
-
-    for (instr_id, timing) in timings.iter() {
-        let viz_id = viz_id_map.get(instr_id).copied().unwrap_or(instr_id.0);
-
-        // Get disassembly or fall back to generic label
-        let label = disasm_map
-            .get(instr_id)
-            .cloned()
-            .unwrap_or_else(|| format!("Instr_{}", instr_id.0));
-
-        // Create KonataOp
-        let mut op = KonataOp::new(
-            viz_id,
-            instr_id.0,
-            0x1000 + instr_id.0 * 4, // Approximate PC
-            label,
-        );
-
-        op.fetched_cycle = timing.fetch_start.unwrap_or(0);
-        op.retired_cycle = timing.retire_cycle;
-
-        // Add stages from timing
-        let stages = timing.to_stages();
-        for stage in stages {
-            let lane = op
-                .lanes
-                .entry("main".to_string())
-                .or_insert_with(|| KonataLane::new("main"));
-            lane.stages
-                .push(KonataStage::new(stage.name, stage.start_cycle, stage.end_cycle));
-        }
-
-        // Add source registers
-        if let Some(src_regs) = src_regs_map.get(instr_id) {
-            op.src_regs = src_regs.clone();
-        }
-
-        // Add destination registers
-        if let Some(dst_regs) = dst_regs_map.get(instr_id) {
-            op.dst_regs = dst_regs.clone();
-        }
-
-        // Add memory info
-        if let Some((addr, _size, is_load)) = mem_access_map.get(instr_id) {
-            op.is_memory = true;
-            op.mem_addr = Some(*addr);
-            let _ = is_load; // Mark as used
-        }
-
-        // Add dependencies
-        if let Some(deps) = dependencies.get(instr_id) {
-            op.prods = deps.clone();
-        }
-
-        ops.push(op);
-    }
-
-    // Sort by ID
-    ops.sort_by_key(|op| op.id);
-    ops
-}
-
 #[cfg(not(feature = "visualization"))]
 fn main() {
-    eprintln!("This example requires the 'visualization' feature.");
-    eprintln!(
-        "Run with: cargo run --features visualization --example generate_konata"
-    );
+    eprintln!("[ERROR] This program requires the 'visualization' feature.");
+    eprintln!("Build with: cargo build --release --features visualization --example cpu_emulator");
 }
 
-/// Export format for Konata data
+/// Konata export format
 #[cfg(feature = "visualization")]
 #[derive(serde::Serialize)]
 struct KonataExport {
@@ -294,865 +348,158 @@ struct KonataExport {
     ops: Vec<KonataOp>,
 }
 
-/// TopDown Report for export
+/// TopDown analysis result
 #[derive(serde::Serialize)]
-struct TopDownReportExport {
-    version: String,
-    summary: SummaryMetrics,
-    topdown: TopDownMetricsExport,
-    frontend_bound: FrontendBoundExport,
-    backend_bound: BackendBoundExport,
-    bad_speculation: BadSpeculationExport,
-    retiring: RetiringExport,
-    stage_utilization: StageUtilizationExport,
-    hotspots: Vec<HotspotExport>,
-    cycle_distribution: CycleDistributionExport,
+struct TopDownAnalysis {
+    pub summary: SummaryMetrics,
+    pub topdown: TopDownMetrics,
+    pub pipeline: PipelineMetrics,
 }
 
 #[derive(serde::Serialize)]
 struct SummaryMetrics {
-    total_cycles: u64,
-    total_instructions: u64,
-    ipc: f64,
-    issue_width: u64,
-    window_size: u64,
+    pub total_cycles: u64,
+    pub total_instructions: u64,
+    pub ipc: f64,
 }
 
 #[derive(serde::Serialize)]
-struct TopDownMetricsExport {
-    retiring_pct: f64,
-    bad_speculation_pct: f64,
-    frontend_bound_pct: f64,
-    backend_bound_pct: f64,
+struct TopDownMetrics {
+    pub retiring: f64,
+    pub frontend_bound: f64,
+    pub backend_bound: f64,
+    pub bad_speculation: f64,
 }
 
 #[derive(serde::Serialize)]
-struct FrontendBoundExport {
-    fetch_latency_pct: f64,
-    fetch_bandwidth_pct: f64,
-    icache_miss_rate: f64,
-    itlb_miss_rate: f64,
+struct PipelineMetrics {
+    pub issue_width: u64,
+    pub commit_width: u64,
+    pub window_size: u64,
 }
 
-#[derive(serde::Serialize)]
-struct BackendBoundExport {
-    memory_bound_pct: f64,
-    core_bound_pct: f64,
-    l1_dcache_miss_rate: f64,
-    l2_cache_miss_rate: f64,
-    l3_cache_miss_rate: f64,
-    avg_mem_latency: f64,
-}
-
-#[derive(serde::Serialize)]
-struct BadSpeculationExport {
-    branch_mispred_rate: f64,
-    wasted_instructions_pct: f64,
-}
-
-#[derive(serde::Serialize)]
-struct RetiringExport {
-    alu_ops_pct: f64,
-    memory_ops_pct: f64,
-    branch_ops_pct: f64,
-    simd_ops_pct: f64,
-}
-
-#[derive(serde::Serialize)]
-struct StageUtilizationExport {
-    fetch_util: f64,
-    decode_util: f64,
-    rename_util: f64,
-    dispatch_util: f64,
-    issue_util: f64,
-    execute_util: f64,
-    memory_util: f64,
-    commit_util: f64,
-}
-
-#[derive(serde::Serialize, Clone)]
-struct HotspotExport {
-    name: String,
-    start_pc: u64,
-    end_pc: u64,
-    instruction_count: u64,
-    cycle_count: u64,
-    cycle_pct: f64,
-    ipc: f64,
-}
-
-#[derive(serde::Serialize)]
-struct CycleDistributionExport {
-    full_issue_cycles: u64,
-    partial_issue_cycles: u64,
-    stall_cycles: u64,
-    memory_stall_cycles: u64,
-    dependency_stall_cycles: u64,
-}
-
-/// Generate TopDown analysis report from pipeline tracker
 #[cfg(feature = "visualization")]
-fn generate_topdown_report(
-    tracker: &arm_cpu_emulator::visualization::PipelineTracker,
-    stats: &arm_cpu_emulator::PerformanceMetrics,
-    config: &CPUConfig,
-) -> TopDownReportExport {
-    let timings = tracker.get_all_timings();
-    let disasm_map = tracker.get_all_disasm();
+fn generate_topdown_analysis(stats: &PerformanceMetrics, total_cycles: u64) -> TopDownAnalysis {
+    let total_instructions = stats.total_instructions as f64;
+    let cycles = total_cycles as f64;
 
-    let total_cycles = stats.total_cycles;
-    let total_instructions = stats.total_instructions;
+    // Calculate TopDown metrics
+    let retiring = if cycles > 0.0 { total_instructions / cycles } else { 0.0 };
+    let frontend_bound = 0.1; // Placeholder
+    let backend_bound = ((1.0_f64 - stats.l1_hit_rate).max(0.0)) * 0.3;
+    let bad_speculation = 0.05; // Placeholder
 
-    // Analyze instruction types and timing
-    let mut alu_count = 0u64;
-    let mut memory_count = 0u64;
-    let mut branch_count = 0u64;
-    let mut simd_count = 0u64;
+    // Normalize to 100%
+    let total = retiring + frontend_bound + backend_bound + bad_speculation;
+    let normalize = |v: f64| if total > 0.0 { (v / total * 100.0).min(100.0) } else { 0.0 };
 
-    // PC-based hotspot analysis
-    let mut pc_histogram: std::collections::HashMap<u64, (u64, u64)> = std::collections::HashMap::new();
-
-    // Stage utilization tracking
-    let mut fetch_cycles = 0u64;
-    let mut decode_cycles = 0u64;
-    let mut rename_cycles = 0u64;
-    let mut dispatch_cycles = 0u64;
-    let mut issue_cycles = 0u64;
-    let mut execute_cycles = 0u64;
-    let mut memory_cycles = 0u64;
-    let mut commit_cycles = 0u64;
-
-    // Issue width analysis
-    let mut full_issue_cycles = 0u64;
-    let mut partial_issue_cycles = 0u64;
-    let mut stall_cycles = 0u64;
-
-    for (instr_id, timing) in timings.iter() {
-        // Estimate instruction type from disassembly
-        let disasm = disasm_map.get(instr_id).cloned().unwrap_or_default();
-        let disasm_upper = disasm.to_uppercase();
-
-        if disasm_upper.contains("LDR") || disasm_upper.contains("STR") ||
-           disasm_upper.contains("LD") || disasm_upper.contains("ST") {
-            memory_count += 1;
-        } else if disasm_upper.contains("B") || disasm_upper.contains("CBZ") ||
-                  disasm_upper.contains("CBNZ") || disasm_upper.contains("BL") {
-            branch_count += 1;
-        } else if disasm_upper.contains("V") || disasm_upper.contains("SIMD") {
-            simd_count += 1;
-        } else {
-            alu_count += 1;
-        }
-
-        // Calculate instruction latency
-        let fetch = timing.fetch_start.unwrap_or(0);
-        let retire = timing.retire_cycle.unwrap_or(fetch);
-        let latency = if retire > fetch { retire - fetch } else { 1 };
-
-        // Update PC histogram (use instruction ID as proxy for PC)
-        let pc = 0x1000 + instr_id.0 * 4;
-        let entry = pc_histogram.entry(pc).or_insert((0, 0));
-        entry.0 += 1;
-        entry.1 += latency;
-
-        // Accumulate stage durations
-        if let Some(start) = timing.fetch_start {
-            if let Some(end) = timing.fetch_end {
-                fetch_cycles += end.saturating_sub(start).max(1);
-            }
-        }
-        if let Some(start) = timing.decode_start {
-            if let Some(end) = timing.decode_end {
-                decode_cycles += end.saturating_sub(start).max(1);
-            }
-        }
-        if let Some(start) = timing.rename_start {
-            if let Some(end) = timing.rename_end {
-                rename_cycles += end.saturating_sub(start).max(1);
-            }
-        }
-        if let Some(start) = timing.dispatch_start {
-            if let Some(end) = timing.dispatch_end {
-                dispatch_cycles += end.saturating_sub(start).max(1);
-            }
-        }
-        if let Some(start) = timing.issue_start {
-            if let Some(end) = timing.issue_end {
-                issue_cycles += end.saturating_sub(start).max(1);
-            }
-        }
-        if let Some(start) = timing.execute_start {
-            if let Some(end) = timing.execute_end {
-                execute_cycles += end.saturating_sub(start).max(1);
-            }
-        }
-        if let Some(start) = timing.memory_start {
-            if let Some(end) = timing.memory_end {
-                memory_cycles += end.saturating_sub(start).max(1);
-            }
-        }
-        if let Some(complete) = timing.complete_cycle {
-            if let Some(end) = timing.execute_end.or(timing.memory_end) {
-                if complete > end {
-                    commit_cycles += complete.saturating_sub(end);
-                }
-            }
-        }
-    }
-
-    // Calculate issue distribution (simplified estimation)
-    let issue_width = config.issue_width as u64;
-    let total_issue_slots = total_cycles * issue_width;
-    let used_issue_slots = total_instructions;
-
-    if total_cycles > 0 {
-        let avg_issue_per_cycle = total_instructions as f64 / total_cycles as f64;
-        full_issue_cycles = (total_cycles as f64 * (avg_issue_per_cycle / issue_width as f64).min(1.0)) as u64;
-        partial_issue_cycles = (total_cycles as f64 * 0.3) as u64; // Estimate
-        stall_cycles = total_cycles.saturating_sub(full_issue_cycles).saturating_sub(partial_issue_cycles);
-    }
-
-    // Calculate TopDown Level 1 metrics
-    let total_instr_f64 = total_instructions as f64;
-    let total_cycles_f64 = total_cycles.max(1) as f64;
-
-    // Retiring: fraction of pipeline capacity doing useful work
-    let retiring_pct = (total_instr_f64 / (total_cycles_f64 * issue_width as f64)).min(1.0) * 100.0;
-
-    // Estimate backend bound from memory operations
-    let memory_ratio = if total_instructions > 0 { memory_count as f64 / total_instr_f64 } else { 0.0 };
-    let backend_bound_pct = (memory_ratio * 40.0).min(100.0 - retiring_pct);
-
-    // Frontend bound estimate
-    let frontend_bound_pct = (stall_cycles as f64 / total_cycles_f64 * 20.0).min(100.0 - retiring_pct - backend_bound_pct);
-
-    // Bad speculation estimate (simplified)
-    let bad_speculation_pct = (100.0 - retiring_pct - frontend_bound_pct - backend_bound_pct).max(0.0);
-
-    // Stage utilization
-    let stage_util = StageUtilizationExport {
-        fetch_util: if total_cycles > 0 { fetch_cycles as f64 / total_instr_f64 * 100.0 / issue_width as f64 } else { 0.0 },
-        decode_util: if total_cycles > 0 { decode_cycles as f64 / total_instr_f64 * 100.0 / issue_width as f64 } else { 0.0 },
-        rename_util: if total_cycles > 0 { rename_cycles as f64 / total_instr_f64 * 100.0 / issue_width as f64 } else { 0.0 },
-        dispatch_util: if total_cycles > 0 { dispatch_cycles as f64 / total_instr_f64 * 100.0 / issue_width as f64 } else { 0.0 },
-        issue_util: if total_cycles > 0 { issue_cycles as f64 / total_instr_f64 * 100.0 / issue_width as f64 } else { 0.0 },
-        execute_util: if total_cycles > 0 { execute_cycles as f64 / total_instr_f64 * 100.0 / issue_width as f64 } else { 0.0 },
-        memory_util: if total_cycles > 0 { memory_cycles as f64 / total_instr_f64 * 100.0 / issue_width as f64 } else { 0.0 },
-        commit_util: if total_cycles > 0 { commit_cycles as f64 / total_instr_f64 * 100.0 / issue_width as f64 } else { 0.0 },
-    };
-
-    // Generate hotspots (top 20 by cycle count)
-    let mut hotspots: Vec<HotspotExport> = pc_histogram
-        .iter()
-        .map(|(pc, (count, cycles))| {
-            HotspotExport {
-                name: format!("PC_{:08X}", pc),
-                start_pc: *pc,
-                end_pc: pc + 4,
-                instruction_count: *count,
-                cycle_count: *cycles,
-                cycle_pct: (*cycles as f64 / total_cycles_f64) * 100.0,
-                ipc: if *cycles > 0 { *count as f64 / *cycles as f64 } else { 0.0 },
-            }
-        })
-        .collect();
-    hotspots.sort_by(|a, b| b.cycle_count.cmp(&a.cycle_count));
-    hotspots.truncate(20);
-
-    TopDownReportExport {
-        version: "1.0".to_string(),
+    TopDownAnalysis {
         summary: SummaryMetrics {
             total_cycles,
-            total_instructions,
+            total_instructions: stats.total_instructions,
             ipc: stats.ipc,
-            issue_width: config.issue_width as u64,
-            window_size: config.window_size as u64,
         },
-        topdown: TopDownMetricsExport {
-            retiring_pct,
-            bad_speculation_pct,
-            frontend_bound_pct,
-            backend_bound_pct,
+        topdown: TopDownMetrics {
+            retiring: normalize(retiring),
+            frontend_bound: normalize(frontend_bound),
+            backend_bound: normalize(backend_bound),
+            bad_speculation: normalize(bad_speculation),
         },
-        frontend_bound: FrontendBoundExport {
-            fetch_latency_pct: frontend_bound_pct * 0.6,
-            fetch_bandwidth_pct: frontend_bound_pct * 0.4,
-            icache_miss_rate: (1.0 - stats.l1_hit_rate) * 100.0,
-            itlb_miss_rate: 0.0,
-        },
-        backend_bound: BackendBoundExport {
-            memory_bound_pct: backend_bound_pct * 0.7,
-            core_bound_pct: backend_bound_pct * 0.3,
-            l1_dcache_miss_rate: (1.0 - stats.l1_hit_rate) * 100.0,
-            l2_cache_miss_rate: (1.0 - stats.l2_hit_rate) * 100.0,
-            l3_cache_miss_rate: 0.0,
-            avg_mem_latency: stats.avg_load_latency,
-        },
-        bad_speculation: BadSpeculationExport {
-            branch_mispred_rate: 0.0, // Not tracked in this simulation
-            wasted_instructions_pct: bad_speculation_pct * 0.5,
-        },
-        retiring: RetiringExport {
-            alu_ops_pct: if total_instructions > 0 { alu_count as f64 / total_instr_f64 * 100.0 } else { 0.0 },
-            memory_ops_pct: if total_instructions > 0 { memory_count as f64 / total_instr_f64 * 100.0 } else { 0.0 },
-            branch_ops_pct: if total_instructions > 0 { branch_count as f64 / total_instr_f64 * 100.0 } else { 0.0 },
-            simd_ops_pct: if total_instructions > 0 { simd_count as f64 / total_instr_f64 * 100.0 } else { 0.0 },
-        },
-        stage_utilization: stage_util,
-        hotspots,
-        cycle_distribution: CycleDistributionExport {
-            full_issue_cycles,
-            partial_issue_cycles,
-            stall_cycles,
-            memory_stall_cycles: (stall_cycles as f64 * 0.4) as u64,
-            dependency_stall_cycles: (stall_cycles as f64 * 0.3) as u64,
+        pipeline: PipelineMetrics {
+            issue_width: 6,
+            commit_width: 6,
+            window_size: 256,
         },
     }
 }
 
-/// Generate HTML visualization for TopDown report
-fn generate_html_report(report: &TopDownReportExport, konata_path: &str, topdown_json_path: &str) -> String {
+#[cfg(feature = "visualization")]
+fn generate_html_report(topdown: &TopDownAnalysis, stats: &PerformanceMetrics) -> String {
     format!(r#"<!DOCTYPE html>
-<html lang="zh-CN">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TopDown Performance Analysis Report</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>ARM CPU Emulator - Performance Report</title>
     <style>
-        * {{
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }}
-        body {{
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: #eee;
-            min-height: 100vh;
-            padding: 20px;
-        }}
-        .container {{
-            max-width: 1400px;
-            margin: 0 auto;
-        }}
-        h1 {{
-            text-align: center;
-            margin-bottom: 30px;
-            font-size: 2.5em;
-            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }}
-        h2 {{
-            margin-bottom: 15px;
-            color: #00d2ff;
-            font-size: 1.5em;
-            border-bottom: 2px solid #3a7bd5;
-            padding-bottom: 10px;
-        }}
-        .card {{
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 20px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }}
-        .summary-grid {{
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }}
-        .metric-card {{
-            background: rgba(58, 123, 213, 0.2);
-            border-radius: 10px;
-            padding: 20px;
-            text-align: center;
-        }}
-        .metric-value {{
-            font-size: 2.5em;
-            font-weight: bold;
-            color: #00d2ff;
-        }}
-        .metric-label {{
-            font-size: 0.9em;
-            color: #aaa;
-            margin-top: 5px;
-        }}
-        .topdown-container {{
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }}
-        @media (max-width: 900px) {{
-            .topdown-container {{
-                grid-template-columns: 1fr;
-            }}
-        }}
-        .chart-container {{
-            position: relative;
-            height: 300px;
-        }}
-        .hotspot-table {{
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }}
-        .hotspot-table th,
-        .hotspot-table td {{
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }}
-        .hotspot-table th {{
-            background: rgba(0, 210, 255, 0.2);
-            color: #00d2ff;
-        }}
-        .hotspot-table tr:hover {{
-            background: rgba(255, 255, 255, 0.05);
-        }}
-        .progress-bar {{
-            height: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            overflow: hidden;
-            margin-top: 10px;
-        }}
-        .progress-fill {{
-            height: 100%;
-            border-radius: 10px;
-            transition: width 0.5s ease;
-        }}
-        .progress-retiring {{ background: linear-gradient(90deg, #4CAF50, #8BC34A); }}
-        .progress-frontend {{ background: linear-gradient(90deg, #2196F3, #03A9F4); }}
-        .progress-backend {{ background: linear-gradient(90deg, #FF9800, #FFC107); }}
-        .progress-speculation {{ background: linear-gradient(90deg, #F44336, #E91E63); }}
-        .legend {{
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-top: 15px;
-        }}
-        .legend-item {{
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }}
-        .legend-color {{
-            width: 20px;
-            height: 20px;
-            border-radius: 4px;
-        }}
-        .stage-grid {{
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-            margin-top: 20px;
-        }}
-        .stage-item {{
-            background: rgba(255, 255, 255, 0.05);
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-        }}
-        .stage-name {{
-            font-size: 0.9em;
-            color: #aaa;
-        }}
-        .stage-value {{
-            font-size: 1.5em;
-            font-weight: bold;
-            color: #00d2ff;
-            margin-top: 5px;
-        }}
-        .links {{
-            margin-top: 20px;
-            text-align: center;
-        }}
-        .links a {{
-            color: #00d2ff;
-            text-decoration: none;
-            margin: 0 15px;
-            padding: 10px 20px;
-            border: 1px solid #00d2ff;
-            border-radius: 5px;
-            transition: all 0.3s ease;
-        }}
-        .links a:hover {{
-            background: #00d2ff;
-            color: #1a1a2e;
-        }}
+        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 40px; background: #1a1a2e; color: #eee; }}
+        h1 {{ color: #00d4ff; }}
+        h2 {{ color: #00d4ff; border-bottom: 1px solid #333; padding-bottom: 10px; }}
+        .metric {{ background: #16213e; padding: 20px; margin: 10px 0; border-radius: 8px; }}
+        .metric-label {{ color: #888; font-size: 14px; }}
+        .metric-value {{ font-size: 32px; font-weight: bold; color: #00d4ff; }}
+        .bar {{ height: 30px; background: #333; border-radius: 4px; margin: 10px 0; }}
+        .bar-fill {{ height: 100%; border-radius: 4px; }}
+        .retiring {{ background: #4CAF50; }}
+        .frontend {{ background: #2196F3; }}
+        .backend {{ background: #FF9800; }}
+        .speculation {{ background: #f44336; }}
+        table {{ width: 100%; border-collapse: collapse; margin: 20px 0; }}
+        th, td {{ padding: 12px; text-align: left; border-bottom: 1px solid #333; }}
+        th {{ color: #00d4ff; }}
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>TopDown Performance Analysis</h1>
+    <h1>ARM CPU Emulator - Performance Report</h1>
 
-        <!-- Summary Metrics -->
-        <div class="summary-grid">
-            <div class="metric-card">
-                <div class="metric-value">{:.2}</div>
-                <div class="metric-label">IPC (Instructions Per Cycle)</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-value">{}</div>
-                <div class="metric-label">Total Cycles</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-value">{}</div>
-                <div class="metric-label">Total Instructions</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-value">{}</div>
-                <div class="metric-label">Issue Width</div>
-            </div>
-        </div>
-
-        <!-- TopDown Level 1 -->
-        <div class="card">
-            <h2>TopDown Level 1 Analysis</h2>
-            <div class="topdown-container">
-                <div>
-                    <div class="chart-container">
-                        <canvas id="topdownChart"></canvas>
-                    </div>
-                </div>
-                <div>
-                    <div style="margin-bottom: 15px;">
-                        <strong>Retiring: {:.1}%</strong>
-                        <div class="progress-bar">
-                            <div class="progress-fill progress-retiring" style="width: {:.1}%"></div>
-                        </div>
-                        <small style="color: #aaa;">Useful work completing successfully</small>
-                    </div>
-                    <div style="margin-bottom: 15px;">
-                        <strong>Frontend Bound: {:.1}%</strong>
-                        <div class="progress-bar">
-                            <div class="progress-fill progress-frontend" style="width: {:.1}%"></div>
-                        </div>
-                        <small style="color: #aaa;">Fetch/decode bottlenecks</small>
-                    </div>
-                    <div style="margin-bottom: 15px;">
-                        <strong>Backend Bound: {:.1}%</strong>
-                        <div class="progress-bar">
-                            <div class="progress-fill progress-backend" style="width: {:.1}%"></div>
-                        </div>
-                        <small style="color: #aaa;">Execution/memory bottlenecks</small>
-                    </div>
-                    <div>
-                        <strong>Bad Speculation: {:.1}%</strong>
-                        <div class="progress-bar">
-                            <div class="progress-fill progress-speculation" style="width: {:.1}%"></div>
-                        </div>
-                        <small style="color: #aaa;">Wasted cycles from branch mispredictions</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Instruction Mix -->
-        <div class="card">
-            <h2>Instruction Mix</h2>
-            <div class="topdown-container">
-                <div class="chart-container">
-                    <canvas id="instrMixChart"></canvas>
-                </div>
-                <div>
-                    <table class="hotspot-table">
-                        <tr><th>Instruction Type</th><th>Percentage</th></tr>
-                        <tr><td>ALU Operations</td><td>{:.1}%</td></tr>
-                        <tr><td>Memory Operations</td><td>{:.1}%</td></tr>
-                        <tr><td>Branch Operations</td><td>{:.1}%</td></tr>
-                        <tr><td>SIMD Operations</td><td>{:.1}%</td></tr>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Stage Utilization -->
-        <div class="card">
-            <h2>Pipeline Stage Utilization</h2>
-            <div class="chart-container" style="height: 250px;">
-                <canvas id="stageChart"></canvas>
-            </div>
-            <div class="stage-grid">
-                <div class="stage-item">
-                    <div class="stage-name">Fetch</div>
-                    <div class="stage-value">{:.1}%</div>
-                </div>
-                <div class="stage-item">
-                    <div class="stage-name">Decode</div>
-                    <div class="stage-value">{:.1}%</div>
-                </div>
-                <div class="stage-item">
-                    <div class="stage-name">Rename</div>
-                    <div class="stage-value">{:.1}%</div>
-                </div>
-                <div class="stage-item">
-                    <div class="stage-name">Dispatch</div>
-                    <div class="stage-value">{:.1}%</div>
-                </div>
-                <div class="stage-item">
-                    <div class="stage-name">Issue</div>
-                    <div class="stage-value">{:.1}%</div>
-                </div>
-                <div class="stage-item">
-                    <div class="stage-name">Execute</div>
-                    <div class="stage-value">{:.1}%</div>
-                </div>
-                <div class="stage-item">
-                    <div class="stage-name">Memory</div>
-                    <div class="stage-value">{:.1}%</div>
-                </div>
-                <div class="stage-item">
-                    <div class="stage-name">Commit</div>
-                    <div class="stage-value">{:.1}%</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Cycle Distribution -->
-        <div class="card">
-            <h2>Cycle Distribution</h2>
-            <div class="topdown-container">
-                <div class="chart-container">
-                    <canvas id="cycleChart"></canvas>
-                </div>
-                <div>
-                    <table class="hotspot-table">
-                        <tr><th>Cycle Type</th><th>Count</th><th>Percentage</th></tr>
-                        <tr><td>Full Issue</td><td>{}</td><td>{:.1}%</td></tr>
-                        <tr><td>Partial Issue</td><td>{}</td><td>{:.1}%</td></tr>
-                        <tr><td>Stall Cycles</td><td>{}</td><td>{:.1}%</td></tr>
-                        <tr><td>Memory Stalls</td><td>{}</td><td>{:.1}%</td></tr>
-                        <tr><td>Dependency Stalls</td><td>{}</td><td>{:.1}%</td></tr>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Hotspots -->
-        <div class="card">
-            <h2>Top 20 Hotspots</h2>
-            <table class="hotspot-table">
-                <tr>
-                    <th>PC Range</th>
-                    <th>Instructions</th>
-                    <th>Cycles</th>
-                    <th>Cycle %</th>
-                    <th>Local IPC</th>
-                </tr>
-                {}
-            </table>
-        </div>
-
-        <!-- Links -->
-        <div class="links">
-            <a href="{}">Konata Pipeline View</a>
-            <a href="{}">TopDown JSON Data</a>
-        </div>
+    <h2>Summary</h2>
+    <div class="metric">
+        <div class="metric-label">Total Cycles</div>
+        <div class="metric-value">{}</div>
+    </div>
+    <div class="metric">
+        <div class="metric-label">Instructions</div>
+        <div class="metric-value">{}</div>
+    </div>
+    <div class="metric">
+        <div class="metric-label">IPC</div>
+        <div class="metric-value">{:.2}</div>
     </div>
 
-    <script>
-        // TopDown Chart
-        new Chart(document.getElementById('topdownChart'), {{
-            type: 'doughnut',
-            data: {{
-                labels: ['Retiring', 'Frontend Bound', 'Backend Bound', 'Bad Speculation'],
-                datasets: [{{
-                    data: [{:.1}, {:.1}, {:.1}, {:.1}],
-                    backgroundColor: [
-                        'rgba(76, 175, 80, 0.8)',
-                        'rgba(33, 150, 243, 0.8)',
-                        'rgba(255, 152, 0, 0.8)',
-                        'rgba(244, 67, 54, 0.8)'
-                    ],
-                    borderColor: [
-                        'rgba(76, 175, 80, 1)',
-                        'rgba(33, 150, 243, 1)',
-                        'rgba(255, 152, 0, 1)',
-                        'rgba(244, 67, 54, 1)'
-                    ],
-                    borderWidth: 2
-                }}]
-            }},
-            options: {{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {{
-                    legend: {{
-                        position: 'bottom',
-                        labels: {{ color: '#eee' }}
-                    }}
-                }}
-            }}
-        }});
+    <h2>TopDown Analysis</h2>
+    <table>
+        <tr><th>Metric</th><th>Value</th><th>Bar</th></tr>
+        <tr>
+            <td>Retiring</td>
+            <td>{:.1}%</td>
+            <td><div class="bar"><div class="bar-fill retiring" style="width: {:.1}%"></div></div></td>
+        </tr>
+        <tr>
+            <td>Frontend Bound</td>
+            <td>{:.1}%</td>
+            <td><div class="bar"><div class="bar-fill frontend" style="width: {:.1}%"></div></div></td>
+        </tr>
+        <tr>
+            <td>Backend Bound</td>
+            <td>{:.1}%</td>
+            <td><div class="bar"><div class="bar-fill backend" style="width: {:.1}%"></div></div></td>
+        </tr>
+        <tr>
+            <td>Bad Speculation</td>
+            <td>{:.1}%</td>
+            <td><div class="bar"><div class="bar-fill speculation" style="width: {:.1}%"></div></div></td>
+        </tr>
+    </table>
 
-        // Instruction Mix Chart
-        new Chart(document.getElementById('instrMixChart'), {{
-            type: 'pie',
-            data: {{
-                labels: ['ALU', 'Memory', 'Branch', 'SIMD'],
-                datasets: [{{
-                    data: [{:.1}, {:.1}, {:.1}, {:.1}],
-                    backgroundColor: [
-                        'rgba(0, 210, 255, 0.8)',
-                        'rgba(255, 193, 7, 0.8)',
-                        'rgba(156, 39, 176, 0.8)',
-                        'rgba(0, 150, 136, 0.8)'
-                    ],
-                    borderWidth: 2
-                }}]
-            }},
-            options: {{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {{
-                    legend: {{
-                        position: 'bottom',
-                        labels: {{ color: '#eee' }}
-                    }}
-                }}
-            }}
-        }});
-
-        // Stage Utilization Chart
-        new Chart(document.getElementById('stageChart'), {{
-            type: 'bar',
-            data: {{
-                labels: ['Fetch', 'Decode', 'Rename', 'Dispatch', 'Issue', 'Execute', 'Memory', 'Commit'],
-                datasets: [{{
-                    label: 'Utilization %',
-                    data: [{:.1}, {:.1}, {:.1}, {:.1}, {:.1}, {:.1}, {:.1}, {:.1}],
-                    backgroundColor: 'rgba(0, 210, 255, 0.6)',
-                    borderColor: 'rgba(0, 210, 255, 1)',
-                    borderWidth: 1
-                }}]
-            }},
-            options: {{
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {{
-                    y: {{
-                        beginAtZero: true,
-                        ticks: {{ color: '#aaa' }},
-                        grid: {{ color: 'rgba(255,255,255,0.1)' }}
-                    }},
-                    x: {{
-                        ticks: {{ color: '#aaa' }},
-                        grid: {{ color: 'rgba(255,255,255,0.1)' }}
-                    }}
-                }},
-                plugins: {{
-                    legend: {{ display: false }}
-                }}
-            }}
-        }});
-
-        // Cycle Distribution Chart
-        new Chart(document.getElementById('cycleChart'), {{
-            type: 'bar',
-            data: {{
-                labels: ['Full Issue', 'Partial Issue', 'Stall', 'Memory Stall', 'Dep Stall'],
-                datasets: [{{
-                    label: 'Cycles',
-                    data: [{}, {}, {}, {}, {}],
-                    backgroundColor: [
-                        'rgba(76, 175, 80, 0.8)',
-                        'rgba(33, 150, 243, 0.8)',
-                        'rgba(244, 67, 54, 0.8)',
-                        'rgba(255, 152, 0, 0.8)',
-                        'rgba(156, 39, 176, 0.8)'
-                    ],
-                    borderWidth: 1
-                }}]
-            }},
-            options: {{
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {{
-                    y: {{
-                        beginAtZero: true,
-                        ticks: {{ color: '#aaa' }},
-                        grid: {{ color: 'rgba(255,255,255,0.1)' }}
-                    }},
-                    x: {{
-                        ticks: {{ color: '#aaa' }},
-                        grid: {{ color: 'rgba(255,255,255,0.1)' }}
-                    }}
-                }},
-                plugins: {{
-                    legend: {{ display: false }}
-                }}
-            }}
-        }});
-    </script>
+    <h2>Pipeline Configuration</h2>
+    <table>
+        <tr><th>Parameter</th><th>Value</th></tr>
+        <tr><td>Issue Width</td><td>{}</td></tr>
+        <tr><td>Commit Width</td><td>{}</td></tr>
+        <tr><td>Window Size</td><td>{}</td></tr>
+        <tr><td>L1 Hit Rate</td><td>{:.1}%</td></tr>
+    </table>
 </body>
 </html>"#,
-        report.summary.ipc,
-        report.summary.total_cycles,
-        report.summary.total_instructions,
-        report.summary.issue_width,
-        report.topdown.retiring_pct,
-        report.topdown.retiring_pct,
-        report.topdown.frontend_bound_pct,
-        report.topdown.frontend_bound_pct,
-        report.topdown.backend_bound_pct,
-        report.topdown.backend_bound_pct,
-        report.topdown.bad_speculation_pct,
-        report.topdown.bad_speculation_pct,
-        report.retiring.alu_ops_pct,
-        report.retiring.memory_ops_pct,
-        report.retiring.branch_ops_pct,
-        report.retiring.simd_ops_pct,
-        report.stage_utilization.fetch_util,
-        report.stage_utilization.decode_util,
-        report.stage_utilization.rename_util,
-        report.stage_utilization.dispatch_util,
-        report.stage_utilization.issue_util,
-        report.stage_utilization.execute_util,
-        report.stage_utilization.memory_util,
-        report.stage_utilization.commit_util,
-        report.cycle_distribution.full_issue_cycles,
-        report.cycle_distribution.full_issue_cycles as f64 / report.summary.total_cycles as f64 * 100.0,
-        report.cycle_distribution.partial_issue_cycles,
-        report.cycle_distribution.partial_issue_cycles as f64 / report.summary.total_cycles as f64 * 100.0,
-        report.cycle_distribution.stall_cycles,
-        report.cycle_distribution.stall_cycles as f64 / report.summary.total_cycles as f64 * 100.0,
-        report.cycle_distribution.memory_stall_cycles,
-        report.cycle_distribution.memory_stall_cycles as f64 / report.summary.total_cycles as f64 * 100.0,
-        report.cycle_distribution.dependency_stall_cycles,
-        report.cycle_distribution.dependency_stall_cycles as f64 / report.summary.total_cycles as f64 * 100.0,
-        report.hotspots.iter().map(|h| format!(
-            "<tr><td>{}</td><td>{}</td><td>{}</td><td>{:.2}%</td><td>{:.2}</td></tr>",
-            h.name, h.instruction_count, h.cycle_count, h.cycle_pct, h.ipc
-        )).collect::<Vec<_>>().join("\n"),
-        // Use relative paths - extract just the filename
-        "index_static.html",
-        "konata_data_topdown.json",
-        report.topdown.retiring_pct,
-        report.topdown.frontend_bound_pct,
-        report.topdown.backend_bound_pct,
-        report.topdown.bad_speculation_pct,
-        report.retiring.alu_ops_pct,
-        report.retiring.memory_ops_pct,
-        report.retiring.branch_ops_pct,
-        report.retiring.simd_ops_pct,
-        report.stage_utilization.fetch_util,
-        report.stage_utilization.decode_util,
-        report.stage_utilization.rename_util,
-        report.stage_utilization.dispatch_util,
-        report.stage_utilization.issue_util,
-        report.stage_utilization.execute_util,
-        report.stage_utilization.memory_util,
-        report.stage_utilization.commit_util,
-        report.cycle_distribution.full_issue_cycles,
-        report.cycle_distribution.partial_issue_cycles,
-        report.cycle_distribution.stall_cycles,
-        report.cycle_distribution.memory_stall_cycles,
-        report.cycle_distribution.dependency_stall_cycles,
+        topdown.summary.total_cycles,
+        topdown.summary.total_instructions,
+        topdown.summary.ipc,
+        topdown.topdown.retiring, topdown.topdown.retiring,
+        topdown.topdown.frontend_bound, topdown.topdown.frontend_bound,
+        topdown.topdown.backend_bound, topdown.topdown.backend_bound,
+        topdown.topdown.bad_speculation, topdown.topdown.bad_speculation,
+        topdown.pipeline.issue_width,
+        topdown.pipeline.commit_width,
+        topdown.pipeline.window_size,
+        stats.l1_hit_rate * 100.0,
     )
 }
