@@ -5,7 +5,7 @@ echo ============================================
 echo.
 
 REM Run simulation
-generate_konata.exe 100000 static\konata_data.json
+cpu_emulator.exe 100000 static\konata_data.json
 
 echo.
 echo ============================================

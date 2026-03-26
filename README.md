@@ -23,7 +23,7 @@ cd aieda
 cargo build --features visualization --release
 
 # Run simulation (100K instructions)
-cargo run --features visualization --example generate_konata 100000
+cargo run --features visualization --example cpu_emulator 100000
 
 # Start visualization server
 cd visualization/static && python3 -m http.server 8080

@@ -43,7 +43,7 @@ Write-Host "[OK] Examples built" -ForegroundColor Green
 
 Write-Host ""
 Write-Host "[3/4] Running simulation (100K instructions)..." -ForegroundColor Yellow
-$simCmd = "cargo run --release --features visualization --example generate_konata 100000 visualization\static\konata_data.json"
+$simCmd = "cargo run --release --features visualization --example cpu_emulator 100000 visualization\static\konata_data.json"
 Invoke-Expression $simCmd
 if ($LASTEXITCODE -ne 0) {
     Write-Host "[ERROR] Simulation failed!" -ForegroundColor Red

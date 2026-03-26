@@ -77,7 +77,7 @@ cargo build --release
 
 ```bash
 # Generate 1000 instructions with visualization
-cargo run --features visualization --example generate_konata 1000
+cargo run --features visualization --example cpu_emulator 1000
 
 # Output files will be in visualization/static/
 ```
@@ -154,7 +154,7 @@ arm_cpu_emulator/
 │       └── konata_format.rs
 │
 ├── examples/               # Example programs
-│   ├── generate_konata.rs # Generate Konata JSON + TopDown report
+│   ├── cpu_emulator.rs # Generate Konata JSON + TopDown report
 │   ├── elf_to_konata.rs   # Convert ELF to Konata
 │   └── test_*.rs          # Test examples
 │
@@ -209,13 +209,13 @@ cargo build --all-features
 
 ```bash
 # Run with default settings (500 instructions)
-cargo run --features visualization --example generate_konata
+cargo run --features visualization --example cpu_emulator
 
 # Run with custom instruction count
-cargo run --features visualization --example generate_konata 10000
+cargo run --features visualization --example cpu_emulator 10000
 
 # Run with custom output path
-cargo run --features visualization --example generate_konata 100000 /path/to/output.json
+cargo run --features visualization --example cpu_emulator 100000 /path/to/output.json
 ```
 
 ### Simulation with ELF File
@@ -227,7 +227,7 @@ cargo run --features visualization --example elf_to_konata -- program.elf output
 
 ### Expected Output
 
-After running `generate_konata`, the following files are generated:
+After running `cpu_emulator`, the following files are generated:
 
 ```
 visualization/static/
@@ -302,10 +302,10 @@ The TopDown methodology (Intel) identifies performance bottlenecks:
 
 ### Generating TopDown Report
 
-The TopDown report is automatically generated when running `generate_konata`:
+The TopDown report is automatically generated when running `cpu_emulator`:
 
 ```bash
-cargo run --features visualization --example generate_konata 100000
+cargo run --features visualization --example cpu_emulator 100000
 ```
 
 ### TopDown JSON Structure
@@ -387,7 +387,7 @@ let viz_config = VisualizationConfig {
 
 ```bash
 # Add --features visualization flag
-cargo run --features visualization --example generate_konata
+cargo run --features visualization --example cpu_emulator
 ```
 
 #### 2. "konata_data.json too large for GitHub"
@@ -395,7 +395,7 @@ cargo run --features visualization --example generate_konata
 The large JSON file is excluded from git via `.gitignore`. Generate it locally:
 
 ```bash
-cargo run --features visualization --example generate_konata 100000
+cargo run --features visualization --example cpu_emulator 100000
 ```
 
 #### 3. "Port 8080 already in use"
@@ -425,7 +425,7 @@ If offline, download Chart.js locally and modify the HTML.
 Enable trace logging:
 
 ```bash
-RUST_LOG=debug cargo run --features visualization --example generate_konata
+RUST_LOG=debug cargo run --features visualization --example cpu_emulator
 ```
 
 ### Memory Issues
@@ -434,7 +434,7 @@ For large simulations, increase system memory or reduce instruction count:
 
 ```bash
 # Instead of 1M instructions
-cargo run --features visualization --example generate_konata 10000
+cargo run --features visualization --example cpu_emulator 10000
 ```
 
 ---

@@ -30,7 +30,7 @@ jobs:
       run: cargo build --release --features visualization
 
     - name: Build example
-      run: cargo build --release --example generate_konata --features visualization
+      run: cargo build --release --example cpu_emulator --features visualization
 
     - name: Verify build
       run: dir target\release\examples
@@ -38,7 +38,7 @@ jobs:
     - name: Create package
       run: |
         mkdir release_package
-        copy target\release\examples\generate_konata.exe release_package\
+        copy target\release\examples\cpu_emulator.exe release_package\
         xcopy visualization\static release_package\static\ /E /I /Y
 
     - name: Create run.bat
@@ -51,7 +51,7 @@ jobs:
         echo ============================================
         echo.
         echo Running simulation...
-        generate_konata.exe 10000 static\konata_data.json
+        cpu_emulator.exe 10000 static\konata_data.json
         echo.
         echo Done! Open static\konata_data_report.html
         pause
@@ -86,21 +86,21 @@ jobs:
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
     - name: Build example
-      run: cargo build --release --example generate_konata --features visualization
+      run: cargo build --release --example cpu_emulator --features visualization
 
     - name: Create package
       run: |
         mkdir -p release_package
-        cp target/release/examples/generate_konata release_package/
+        cp target/release/examples/cpu_emulator release_package/
         cp -r visualization/static release_package/static
 
     - name: Create run.sh
       run: |
         echo '#!/bin/bash' > release_package/run.sh
         echo 'echo "ARM CPU Emulator - Linux"' >> release_package/run.sh
-        echo './generate_konata 10000 static/konata_data.json' >> release_package/run.sh
+        echo './cpu_emulator 10000 static/konata_data.json' >> release_package/run.sh
         echo 'echo "Done! Open static/konata_data_report.html"' >> release_package/run.sh
-        chmod +x release_package/run.sh release_package/generate_konata
+        chmod +x release_package/run.sh release_package/cpu_emulator
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4

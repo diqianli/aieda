@@ -36,7 +36,7 @@ if %ERRORLEVEL% neq 0 (
 
 echo.
 echo [3/4] Running simulation (100K instructions)...
-cargo run --release --features visualization --example generate_konata 100000 visualization\static\konata_data.json
+cargo run --release --features visualization --example cpu_emulator 100000 visualization\static\konata_data.json
 if %ERRORLEVEL% neq 0 (
     echo [ERROR] Simulation failed!
     pause
