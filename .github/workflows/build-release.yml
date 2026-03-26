@@ -42,17 +42,21 @@ jobs:
         xcopy visualization\static release_package\static\ /E /I /Y
 
     - name: Create run.bat
+      shell: pwsh
       run: |
-        @echo off > release_package\run.bat
-        echo echo ============================================ >> release_package\run.bat
-        echo echo   ARM CPU Emulator - Windows >> release_package\run.bat
-        echo echo ============================================ >> release_package\run.bat
-        echo echo. >> release_package\run.bat
-        echo echo Running simulation... >> release_package\run.bat
-        echo generate_konata.exe 10000 static\konata_data.json >> release_package\run.bat
-        echo echo. >> release_package\run.bat
-        echo echo Done! Open static\konata_data_report.html >> release_package\run.bat
-        echo pause >> release_package\run.bat
+        $batContent = @"
+        @echo off
+        echo ============================================
+        echo   ARM CPU Emulator - Windows
+        echo ============================================
+        echo.
+        echo Running simulation...
+        generate_konata.exe 10000 static\konata_data.json
+        echo.
+        echo Done! Open static\konata_data_report.html
+        pause
+        "@
+        Set-Content -Path "release_package\run.bat" -Value $batContent -NoNewline
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
