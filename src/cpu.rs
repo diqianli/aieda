@@ -145,7 +145,22 @@ impl CPUEmulator {
             // Process completions for this cycle FIRST (releases dependencies)
             // This ensures that instructions that complete this cycle wake up
             // their dependents before we try to issue new instructions
-            self.ooo_engine.cycle_tick();
+            let completions_processed = self.ooo_engine.cycle_tick();
+
+            // Debug: Log completion processing
+            if completions_processed > 0 {
+                tracing::debug!(
+                    "Cycle {}: Processed {} completions",
+                    self.current_cycle, completions_processed
+                );
+            }
+
+            // Record ready cycle for newly ready instructions
+            let newly_ready = self.ooo_engine.take_newly_ready();
+            for ready_id in newly_ready {
+                self.pipeline_tracker.record_ready(ready_id, self.current_cycle);
+                self.visualization.pipeline_tracker_mut().record_ready(ready_id, self.current_cycle);
+            }
 
             // Execute ready instructions (including newly woken up dependents)
             self.execute()?;
@@ -214,6 +229,13 @@ impl CPUEmulator {
         // This ensures that instructions that complete this cycle wake up
         // their dependents before we try to issue new instructions
         self.ooo_engine.cycle_tick();
+
+        // Record ready cycle for newly ready instructions
+        let newly_ready = self.ooo_engine.take_newly_ready();
+        for ready_id in newly_ready {
+            self.pipeline_tracker.record_ready(ready_id, self.current_cycle);
+            self.visualization.pipeline_tracker_mut().record_ready(ready_id, self.current_cycle);
+        }
 
         // Execute ready instructions (including newly woken up dependents)
         let _ = self.execute();
@@ -322,9 +344,14 @@ impl CPUEmulator {
                     self.handle_memory_op(id, mem_access)?;
                 } else {
                     // Memory op without address - complete immediately
-                    self.ooo_engine.mark_completed(id, self.current_cycle + 1);
-                    self.pipeline_tracker.record_complete(id, self.current_cycle + 1);
-                    self.visualization.pipeline_tracker_mut().record_complete(id, self.current_cycle + 1);
+                    let complete_cycle = self.current_cycle + 1;
+                    self.ooo_engine.mark_completed(id, complete_cycle);
+
+                    // Track memory stage for visualization (even without address)
+                    self.pipeline_tracker.record_memory(id, self.current_cycle, complete_cycle);
+                    self.pipeline_tracker.record_complete(id, complete_cycle);
+                    self.visualization.pipeline_tracker_mut().record_memory(id, self.current_cycle, complete_cycle);
+                    self.visualization.pipeline_tracker_mut().record_complete(id, complete_cycle);
                 }
             } else {
                 // Compute instruction - complete after latency

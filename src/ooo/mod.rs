@@ -31,6 +31,8 @@ pub struct OoOEngine {
     /// Instructions scheduled to complete, keyed by completion cycle
     /// Map from complete_cycle -> Vec<InstructionId>
     pending_completions: BTreeMap<u64, Vec<InstructionId>>,
+    /// Instructions that became ready in the last cycle_tick
+    newly_ready: Vec<InstructionId>,
 }
 
 impl OoOEngine {
@@ -48,6 +50,7 @@ impl OoOEngine {
             current_cycle: 0,
             next_commit_id: 0,
             pending_completions: BTreeMap::new(),
+            newly_ready: Vec::new(),
         })
     }
 
@@ -110,7 +113,11 @@ impl OoOEngine {
 
     /// Process all completions that are due at or before the current cycle
     /// This releases dependencies and wakes up dependent instructions
-    pub fn process_completions(&mut self) {
+    /// Returns the number of completions processed
+    pub fn process_completions(&mut self) -> usize {
+        // Clear the list of newly ready instructions from last cycle
+        self.newly_ready.clear();
+
         // Get all completion cycles that are due (<= current_cycle)
         let due_cycles: Vec<u64> = self.pending_completions
             .keys()
@@ -118,10 +125,14 @@ impl OoOEngine {
             .copied()
             .collect();
 
+        let mut completions_count = 0;
+
         // Process completions for each due cycle
         for cycle in due_cycles {
             if let Some(ids) = self.pending_completions.remove(&cycle) {
                 for id in ids {
+                    completions_count += 1;
+
                     // Get dependents BEFORE releasing (release removes the list)
                     let dependents = self.dependency_tracker.get_dependents(id);
 
@@ -151,11 +162,20 @@ impl OoOEngine {
                         if is_ready {
                             self.window.mark_ready(dep_id);
                             self.scheduler.add_ready(dep_id);
+                            // Track newly ready instruction
+                            self.newly_ready.push(dep_id);
                         }
                     }
                 }
             }
         }
+
+        completions_count
+    }
+
+    /// Get the list of instructions that became ready in the last cycle_tick
+    pub fn take_newly_ready(&mut self) -> Vec<InstructionId> {
+        std::mem::take(&mut self.newly_ready)
     }
 
     /// Get instructions ready to commit (in program order)
@@ -192,8 +212,10 @@ impl OoOEngine {
 
     /// Process completions for the current cycle
     /// This should be called before commit() in each cycle
-    pub fn cycle_tick(&mut self) {
-        self.process_completions();
+    /// Returns the number of completions processed
+    pub fn cycle_tick(&mut self) -> usize {
+        let count = self.process_completions();
+        count
     }
 
     /// Get the current cycle

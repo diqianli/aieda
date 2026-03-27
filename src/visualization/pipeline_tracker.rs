@@ -170,40 +170,45 @@ impl PipelineTracker {
         // Get fetch end cycle (fetch must have been recorded first)
         let fetch_end = timing.fetch_end.unwrap_or(cycle);
 
-        // Decode starts at fetch_end
-        let decode_start = fetch_end;
-        // If dispatch is after fetch, decode has time; otherwise decode is 1 cycle
-        let decode_end = if cycle > fetch_end {
-            std::cmp::min(fetch_end + 1, cycle)
+        // For visualization purposes, we create sequential stages starting from fetch.
+        // But if dispatch happens early (same cycle as fetch), we allow stages to overlap.
+        //
+        // The key insight: if dispatch_cycle <= fetch_end, then all stages (Dc, Rn, Ds)
+        // happen in the same cycle or overlap with fetch.
+
+        // Decode stage: starts at fetch_start (can overlap with fetch end)
+        let decode_start = timing.fetch_start.unwrap_or(fetch_end);
+        let decode_end = if cycle <= fetch_end {
+            // Dispatch is early - decode ends at dispatch cycle (can overlap)
+            std::cmp::max(cycle, decode_start)
         } else {
-            fetch_end + 1
+            // Normal case - decode has time between fetch and dispatch
+            std::cmp::min(fetch_end + 1, cycle)
         };
 
         // Record Decode stage if not already recorded
         if timing.decode_start.is_none() {
             timing.record_decode(decode_start, decode_end);
         }
-        let actual_decode_end = timing.decode_end.unwrap_or(decode_end);
 
-        // Rename starts at decode_end
-        let rename_start = actual_decode_end;
-        // If dispatch is after decode_end, rename has time; otherwise rename is 1 cycle
-        let rename_end = if cycle > actual_decode_end {
-            std::cmp::min(actual_decode_end + 1, cycle)
+        // Rename stage: starts when decode ends (can overlap with decode)
+        let rename_start = timing.decode_end.unwrap_or(decode_end);
+        let rename_end = if cycle <= rename_start {
+            // Dispatch is early - rename ends at dispatch cycle (can overlap)
+            std::cmp::max(cycle, rename_start)
         } else {
-            actual_decode_end + 1
+            // Normal case - rename has time between decode and dispatch
+            std::cmp::min(rename_start + 1, cycle)
         };
 
         // Record Rename stage if not already recorded
         if timing.rename_start.is_none() {
             timing.record_rename(rename_start, rename_end);
         }
-        let actual_rename_end = timing.rename_end.unwrap_or(rename_end);
 
-        // Dispatch starts at rename_end
-        let dispatch_start = actual_rename_end;
-        // Dispatch ends at the given cycle, but ensure it's at least rename_end
-        let dispatch_end = std::cmp::max(cycle, actual_rename_end);
+        // Dispatch stage: starts when rename ends, ends at dispatch cycle
+        let dispatch_start = timing.rename_end.unwrap_or(rename_end);
+        let dispatch_end = std::cmp::max(cycle, dispatch_start);
 
         timing.record_dispatch(dispatch_start, dispatch_end);
     }
@@ -212,23 +217,24 @@ impl PipelineTracker {
     /// This marks the end of the issue wait period.
     pub fn record_ready(&mut self, id: InstructionId, cycle: u64) {
         let timing = self.timings.entry(id).or_insert_with(StageTiming::new);
+
         timing.ready_cycle = Some(cycle);
     }
 
     /// Record an instruction being issued for execution.
     /// The issue stage represents the time from when the instruction becomes ready
-    /// (dispatch ends) to when it's selected for execution.
+    /// (all operands available) to when it's selected for execution.
     pub fn record_issue(&mut self, id: InstructionId, cycle: u64) {
         let timing = self.timings.entry(id).or_insert_with(StageTiming::new);
 
-        // Issue stage starts when instruction is ready (dispatch end)
-        let dispatch_end = timing.dispatch_end.unwrap_or(cycle);
+        // Issue stage starts when instruction becomes READY (all operands available)
+        // NOT when it was dispatched. This ensures correct timing visualization.
+        let issue_start = timing.ready_cycle
+            .or(timing.dispatch_end)
+            .unwrap_or(cycle);
 
-        // Issue starts at dispatch_end (when instruction enters window and becomes ready)
         // Issue ends when the instruction is actually selected for execution
-        // If dispatch hasn't been recorded yet, use the current cycle
-        let issue_start = dispatch_end;
-        let issue_end = std::cmp::max(dispatch_end, cycle);
+        let issue_end = std::cmp::max(issue_start, cycle);
 
         timing.record_issue(issue_start, issue_end);
     }
@@ -270,6 +276,7 @@ impl PipelineTracker {
     }
 
     /// Record an instruction completing.
+    /// Only sets complete_cycle if not already set (to prevent overwriting with wrong values).
     pub fn record_complete(&mut self, id: InstructionId, cycle: u64) {
         let timing = self.timings.entry(id).or_insert_with(StageTiming::new);
 
@@ -281,7 +288,11 @@ impl PipelineTracker {
             timing.record_execute(timing.execute_start.unwrap(), cycle);
         }
 
-        timing.record_complete(cycle);
+        // Only set complete_cycle if not already set
+        // (to prevent overwriting with wrong values from subsequent calls)
+        if timing.complete_cycle.is_none() {
+            timing.record_complete(cycle);
+        }
 
         // Track completed instructions
         if !self.completed.contains(&id) {
@@ -293,9 +304,15 @@ impl PipelineTracker {
     }
 
     /// Record an instruction being retired/committed.
+    /// Only sets retire_cycle if not already set (to prevent overwriting with wrong values).
     pub fn record_retire(&mut self, id: InstructionId, cycle: u64) {
         let timing = self.timings.entry(id).or_insert_with(StageTiming::new);
-        timing.record_retire(cycle);
+
+        // Only set retire_cycle if not already set
+        // (to prevent overwriting with wrong values from subsequent calls)
+        if timing.retire_cycle.is_none() {
+            timing.record_retire(cycle);
+        }
 
         // Assign retire order ID
         self.retire_counter += 1;
@@ -527,6 +544,81 @@ impl PipelineTracker {
     /// Get the retire counter.
     pub fn retire_count(&self) -> u64 {
         self.retire_counter
+    }
+
+    /// Export all tracked instructions as Konata ops.
+    /// This includes instructions that have been committed and removed from the window.
+    pub fn export_all_konata_ops(&self) -> Vec<KonataOp> {
+        let mut ops = Vec::new();
+
+        // Iterate over all tracked instructions
+        for (&id, &viz_id) in &self.viz_id_map {
+            let timing = match self.timings.get(&id) {
+                Some(t) => t.clone(),
+                None => continue,
+            };
+
+            // Get disassembly
+            let disasm = self.disasm_map.get(&id).cloned()
+                .unwrap_or_else(|| format!("Instr {}", id.0));
+
+            // Get PC (from fetch stage or default to 0)
+            let pc = 0u64; // We don't track PC separately, would need to add it
+
+            // Create Konata operation
+            let mut op = KonataOp::new(
+                viz_id,
+                id.0, // Use instruction ID as gid
+                pc,
+                disasm,
+            );
+
+            op.fetched_cycle = timing.fetch_start.unwrap_or(0);
+            op.retired_cycle = timing.retire_cycle;
+
+            // Add stages
+            for stage in timing.to_stages() {
+                let stage_id = match stage.name.as_str() {
+                    "F" => StageId::F,
+                    "Dc" => StageId::Dc,
+                    "Rn" => StageId::Rn,
+                    "Ds" => StageId::Ds,
+                    "Is" => StageId::Is,
+                    "Ex" => StageId::Ex,
+                    "Me" => StageId::Me,
+                    "Cm" => StageId::Cm,
+                    "Rt" => StageId::Rt,
+                    _ => continue,
+                };
+                op.add_stage(stage_id, stage.start_cycle, stage.end_cycle);
+            }
+
+            // Add registers
+            if let Some(src_regs) = self.src_regs_map.get(&id) {
+                op.src_regs = src_regs.clone();
+            }
+            if let Some(dst_regs) = self.dst_regs_map.get(&id) {
+                op.dst_regs = dst_regs.clone();
+            }
+
+            // Add memory info
+            if let Some((addr, _size, _is_load)) = self.mem_access_map.get(&id) {
+                op.is_memory = true;
+                op.mem_addr = Some(*addr);
+            }
+
+            // Add dependencies
+            if let Some(deps) = self.dependencies.get(&id) {
+                op.prods = deps.clone();
+            }
+
+            ops.push(op);
+        }
+
+        // Sort by visualization ID
+        ops.sort_by_key(|op| op.id);
+
+        ops
     }
 }
 

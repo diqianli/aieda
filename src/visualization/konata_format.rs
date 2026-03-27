@@ -465,11 +465,27 @@ impl StageTiming {
             }
         }
 
-        // Retire stage: from Complete to retire
+        // Retire stage: from Complete end to retire
+        // Rt MUST start AFTER Cm ends for correct visualization
         if let Some(r) = self.retire_cycle {
-            // Retire starts when Complete ends
-            let rt_start = self.complete_cycle.unwrap_or(r);
-            add_stage_inner(&mut stages, "Rt", rt_start, r);
+            // Calculate Cm end cycle (adjusted for minimum duration)
+            let cm_end_adjusted = if let Some(c) = self.complete_cycle {
+                if let Some(e) = exec_mem_end {
+                    // Cm ends at complete_cycle, adjusted to have min 1 cycle
+                    std::cmp::max(c, e + 1)
+                } else {
+                    c
+                }
+            } else {
+                // No Cm stage - use exec_mem_end
+                exec_mem_end.unwrap_or(r.saturating_sub(1))
+            };
+
+            // Rt starts at Cm end (adjusted), ensuring it's AFTER Cm
+            let rt_start = cm_end_adjusted;
+            // Rt ends at retire_cycle, ensuring at least 1 cycle duration
+            let rt_end = std::cmp::max(r, rt_start + 1);
+            add_stage_inner(&mut stages, "Rt", rt_start, rt_end);
         }
 
         stages

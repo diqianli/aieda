@@ -261,50 +261,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Instructions: {}", stats.total_instructions);
     println!("IPC: {:.2}", stats.ipc);
 
-    // Export Konata JSON
+    // Export Konata JSON (including retired instructions)
     println!();
     println!("--- Exporting Konata Data ---");
 
-    let cpu_viz = cpu.visualization();
-    let konata_snapshots = cpu_viz.konata_snapshots();
-
-    // Merge all snapshots
-    let mut all_ops: Vec<KonataOp> = Vec::new();
-    let mut last_cycle = 0u64;
-    let mut last_committed = 0u64;
-
-    for snapshot in konata_snapshots {
-        last_cycle = snapshot.cycle;
-        last_committed = snapshot.committed_count;
-
-        for op in &snapshot.ops {
-            if !all_ops.iter().any(|o| o.id == op.id) {
-                all_ops.push(op.clone());
-            }
-        }
-    }
-
-    all_ops.sort_by_key(|op| op.id);
-
-    // Export Konata JSON
-    let export = KonataExport {
-        version: "1.0".to_string(),
-        total_cycles: last_cycle,
-        total_instructions: last_committed,
-        ops_count: all_ops.len(),
-        ops: all_ops,
-    };
-
-    let json = serde_json::to_string_pretty(&export)?;
-    let mut file = File::create(&output_path)?;
-    file.write_all(json.as_bytes())?;
-    println!("Konata JSON: {} ({} ops)", output_path, export.ops_count);
+    let ops_count = cpu.visualization().export_all_konata_to_file(&output_path)?;
+    println!("Konata JSON: {} ({} ops)", output_path, ops_count);
 
     // Generate TopDown analysis
     println!();
     println!("--- TopDown Analysis ---");
 
-    let topdown = generate_topdown_analysis(&stats, last_cycle);
+    let topdown = generate_topdown_analysis(&stats, stats.total_cycles);
 
     // Export TopDown JSON
     let topdown_json = serde_json::to_string_pretty(&topdown)?;

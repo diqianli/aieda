@@ -380,6 +380,54 @@ impl VisualizationState {
         Ok(ops_count)
     }
 
+    /// Export all tracked Konata data to a JSON file (including retired instructions).
+    ///
+    /// This exports all instructions tracked by the pipeline tracker, including
+    /// those that have been committed and removed from the instruction window.
+    /// This ensures that the Rt (Retire) stage is properly included.
+    ///
+    /// # Arguments
+    /// * `path` - Output file path
+    ///
+    /// # Returns
+    /// The number of operations exported, or an error.
+    #[cfg(feature = "visualization")]
+    pub fn export_all_konata_to_file<P: AsRef<std::path::Path>>(&self, path: P) -> std::io::Result<usize> {
+        use std::fs::File;
+        use std::io::Write;
+
+        // Export all tracked instructions from the pipeline tracker
+        let all_ops = self.pipeline_tracker.export_all_konata_ops();
+
+        let ops_count = all_ops.len();
+
+        // Create export structure
+        #[derive(serde::Serialize)]
+        struct KonataExport {
+            version: String,
+            total_cycles: u64,
+            total_instructions: u64,
+            ops_count: usize,
+            ops: Vec<KonataOp>,
+        }
+
+        let export = KonataExport {
+            version: "1.0".to_string(),
+            total_cycles: self.current_cycle,
+            total_instructions: self.committed_count,
+            ops_count,
+            ops: all_ops,
+        };
+
+        // Write to file
+        let json = serde_json::to_string_pretty(&export)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        let mut file = File::create(path)?;
+        file.write_all(json.as_bytes())?;
+
+        Ok(ops_count)
+    }
+
     /// Get the current cycle.
     pub fn current_cycle(&self) -> u64 {
         self.current_cycle
