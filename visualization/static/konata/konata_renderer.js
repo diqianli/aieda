@@ -593,15 +593,15 @@ class KonataRenderer {
 
         // Color mapping for stages (matching backend stage names)
         const stageColors = {
-            'F': { fill: 'hsla(200, 70%, 60%, 0.7)', stroke: 'hsl(200, 70%, 60%)' },      // Fetch - blue
-            'Dc': { fill: 'hsla(180, 60%, 55%, 0.7)', stroke: 'hsl(180, 60%, 55%)' },    // Decode - cyan
-            'Rn': { fill: 'hsla(160, 50%, 50%, 0.7)', stroke: 'hsl(160, 50%, 50%)' },    // Rename - teal
-            'Ds': { fill: 'hsla(140, 60%, 55%, 0.7)', stroke: 'hsl(140, 60%, 55%)' },    // Dispatch - green
-            'Is': { fill: 'hsla(120, 70%, 45%, 0.7)', stroke: 'hsl(120, 70%, 45%)' },    // Issue - yellow-green
-            'Ex': { fill: 'hsla(60, 80%, 55%, 0.7)', stroke: 'hsl(60, 80%, 55%)' },      // Execute - yellow
-            'Me': { fill: 'hsla(30, 80%, 55%, 0.7)', stroke: 'hsl(30, 80%, 55%)' },      // Memory - orange
-            'Cm': { fill: 'hsla(280, 60%, 55%, 0.7)', stroke: 'hsl(280, 60%, 55%)' },    // Complete - purple
-            'Rt': { fill: 'hsla(320, 50%, 50%, 0.7)', stroke: 'hsl(320, 50%, 50%)' }       // Retire - pink
+            'IF': { fill: 'hsla(200, 70%, 60%, 0.7)', stroke: 'hsl(200, 70%, 60%)' },      // Fetch - blue
+            'DE': { fill: 'hsla(180, 60%, 55%, 0.7)', stroke: 'hsl(180, 60%, 55%)' },    // Decode - cyan
+            'RN': { fill: 'hsla(160, 50%, 50%, 0.7)', stroke: 'hsl(160, 50%, 50%)' },    // Rename - teal
+            'DI': { fill: 'hsla(140, 60%, 55%, 0.7)', stroke: 'hsl(140, 60%, 55%)' },    // Dispatch - green
+            'IS': { fill: 'hsla(120, 70%, 45%, 0.7)', stroke: 'hsl(120, 70%, 45%)' },    // Issue - yellow-green
+            'EX': { fill: 'hsla(60, 80%, 55%, 0.7)', stroke: 'hsl(60, 80%, 55%)' },      // Execute - yellow
+            'ME': { fill: 'hsla(30, 80%, 55%, 0.7)', stroke: 'hsl(30, 80%, 55%)' },      // Memory - orange
+            'WB': { fill: 'hsla(280, 60%, 55%, 0.7)', stroke: 'hsl(280, 60%, 55%)' },    // Writeback - purple
+            'RR': { fill: 'hsla(320, 50%, 50%, 0.7)', stroke: 'hsl(320, 50%, 50%)' }       // Retire - pink
         };
 
         for (const lane of op.lanes.values()) {
@@ -759,16 +759,16 @@ class KonataRenderer {
         const mainLane = op.lanes.get('main');
         if (mainLane) {
             // Result is available at Execute/Memory END (not Complete END)
-            const execStage = mainLane.stages.find(s => s.name === 'Ex');
+            const execStage = mainLane.stages.find(s => s.name === 'EX');
             if (execStage) {
                 return execStage.endCycle;
             }
-            const memStage = mainLane.stages.find(s => s.name === 'Me');
+            const memStage = mainLane.stages.find(s => s.name === 'ME');
             if (memStage) {
                 return memStage.endCycle;
             }
             // Fallback to complete stage START (not END)
-            const completeStage = mainLane.stages.find(s => s.name === 'Cm');
+            const completeStage = mainLane.stages.find(s => s.name === 'WB');
             if (completeStage) {
                 return completeStage.startCycle;
             }
@@ -786,17 +786,17 @@ class KonataRenderer {
         // Try to get from stages first (most accurate)
         const mainLane = op.lanes.get('main');
         if (mainLane) {
-            // Find issue stage end (Is) - this is when execution starts
-            const issueStage = mainLane.stages.find(s => s.name === 'Is');
+            // Find issue stage end (IS) - this is when execution starts
+            const issueStage = mainLane.stages.find(s => s.name === 'IS');
             if (issueStage) {
                 return issueStage.endCycle;
             }
             // Fallback to execute start
-            const execStage = mainLane.stages.find(s => s.name === 'Ex');
+            const execStage = mainLane.stages.find(s => s.name === 'EX');
             if (execStage) {
                 return execStage.startCycle;
             }
-            const memStage = mainLane.stages.find(s => s.name === 'Me');
+            const memStage = mainLane.stages.find(s => s.name === 'ME');
             if (memStage) {
                 return memStage.startCycle;
             }
