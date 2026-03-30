@@ -5,6 +5,204 @@ use serde::{Deserialize, Serialize};
 use schemars::JsonSchema;
 use std::vec::Vec;
 
+/// Cache level identifier
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
+pub enum CacheLevel {
+    /// L1 Data Cache
+    L1,
+    /// L2 Unified Cache
+    L2,
+    /// L3 Last-level Cache
+    L3,
+    /// Main Memory (DDR)
+    Memory,
+}
+
+impl CacheLevel {
+    /// Get the display name for this cache level
+    pub fn name(&self) -> &'static str {
+        match self {
+            CacheLevel::L1 => "L1",
+            CacheLevel::L2 => "L2",
+            CacheLevel::L3 => "L3",
+            CacheLevel::Memory => "MEM",
+        }
+    }
+
+    /// Get the stage name for visualization (ME:L1, ME:L2, etc.)
+    pub fn stage_name(&self) -> String {
+        format!("ME:{}", self.name())
+    }
+}
+
+impl std::fmt::Display for CacheLevel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
+/// Timing for a single cache level access
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct CacheLevelTiming {
+    /// Cache level
+    pub level: CacheLevel,
+    /// Cycle when this level access started
+    pub start_cycle: u64,
+    /// Cycle when this level access completed
+    pub end_cycle: u64,
+}
+
+impl CacheLevelTiming {
+    /// Create new cache level timing
+    pub fn new(level: CacheLevel, start_cycle: u64, end_cycle: u64) -> Self {
+        Self {
+            level,
+            start_cycle,
+            end_cycle,
+        }
+    }
+
+    /// Get the duration of this access
+    pub fn duration(&self) -> u64 {
+        self.end_cycle.saturating_sub(self.start_cycle)
+    }
+}
+
+/// Complete cache hierarchy access result
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct CacheAccessInfo {
+    /// Final level that serviced the request (where the data was found)
+    pub servicing_level: CacheLevel,
+    /// Total access latency from start to data return
+    pub total_latency: u64,
+    /// Timing breakdown by cache level
+    pub level_timing: Vec<CacheLevelTiming>,
+    /// DDR row buffer hit (only relevant if servicing_level == Memory)
+    pub ddr_row_hit: bool,
+    /// DDR bank accessed (only relevant if servicing_level == Memory)
+    pub ddr_bank: Option<usize>,
+}
+
+impl CacheAccessInfo {
+    /// Create a new cache access info
+    pub fn new(servicing_level: CacheLevel, total_latency: u64) -> Self {
+        Self {
+            servicing_level,
+            total_latency,
+            level_timing: Vec::new(),
+            ddr_row_hit: false,
+            ddr_bank: None,
+        }
+    }
+
+    /// Create an L1 hit access info
+    pub fn l1_hit(start_cycle: u64, latency: u64) -> Self {
+        let end_cycle = start_cycle + latency;
+        Self {
+            servicing_level: CacheLevel::L1,
+            total_latency: latency,
+            level_timing: vec![CacheLevelTiming::new(CacheLevel::L1, start_cycle, end_cycle)],
+            ddr_row_hit: false,
+            ddr_bank: None,
+        }
+    }
+
+    /// Create an L2 hit access info (includes L1 miss)
+    pub fn l2_hit(start_cycle: u64, l1_latency: u64, l2_latency: u64) -> Self {
+        let l1_end = start_cycle + l1_latency;
+        let l2_end = l1_end + l2_latency;
+        Self {
+            servicing_level: CacheLevel::L2,
+            total_latency: l1_latency + l2_latency,
+            level_timing: vec![
+                CacheLevelTiming::new(CacheLevel::L1, start_cycle, l1_end),
+                CacheLevelTiming::new(CacheLevel::L2, l1_end, l2_end),
+            ],
+            ddr_row_hit: false,
+            ddr_bank: None,
+        }
+    }
+
+    /// Create an L3 hit access info (includes L1 and L2 miss)
+    pub fn l3_hit(start_cycle: u64, l1_latency: u64, l2_latency: u64, l3_latency: u64) -> Self {
+        let l1_end = start_cycle + l1_latency;
+        let l2_end = l1_end + l2_latency;
+        let l3_end = l2_end + l3_latency;
+        Self {
+            servicing_level: CacheLevel::L3,
+            total_latency: l1_latency + l2_latency + l3_latency,
+            level_timing: vec![
+                CacheLevelTiming::new(CacheLevel::L1, start_cycle, l1_end),
+                CacheLevelTiming::new(CacheLevel::L2, l1_end, l2_end),
+                CacheLevelTiming::new(CacheLevel::L3, l2_end, l3_end),
+            ],
+            ddr_row_hit: false,
+            ddr_bank: None,
+        }
+    }
+
+    /// Create a memory access info (includes L1, L2, L3 miss and DDR access)
+    pub fn memory_access(
+        start_cycle: u64,
+        l1_latency: u64,
+        l2_latency: u64,
+        l3_latency: u64,
+        ddr_latency: u64,
+        ddr_row_hit: bool,
+        ddr_bank: usize,
+    ) -> Self {
+        let l1_end = start_cycle + l1_latency;
+        let l2_end = l1_end + l2_latency;
+        let l3_end = l2_end + l3_latency;
+        let mem_end = l3_end + ddr_latency;
+        Self {
+            servicing_level: CacheLevel::Memory,
+            total_latency: l1_latency + l2_latency + l3_latency + ddr_latency,
+            level_timing: vec![
+                CacheLevelTiming::new(CacheLevel::L1, start_cycle, l1_end),
+                CacheLevelTiming::new(CacheLevel::L2, l1_end, l2_end),
+                CacheLevelTiming::new(CacheLevel::L3, l2_end, l3_end),
+                CacheLevelTiming::new(CacheLevel::Memory, l3_end, mem_end),
+            ],
+            ddr_row_hit,
+            ddr_bank: Some(ddr_bank),
+        }
+    }
+
+    /// Add a timing entry
+    pub fn add_timing(&mut self, timing: CacheLevelTiming) {
+        self.level_timing.push(timing);
+    }
+
+    /// Get the final end cycle
+    pub fn end_cycle(&self) -> u64 {
+        self.level_timing
+            .last()
+            .map(|t| t.end_cycle)
+            .unwrap_or(0)
+    }
+
+    /// Check if this was an L1 hit
+    pub fn is_l1_hit(&self) -> bool {
+        self.servicing_level == CacheLevel::L1
+    }
+
+    /// Check if this was an L2 hit
+    pub fn is_l2_hit(&self) -> bool {
+        self.servicing_level == CacheLevel::L2
+    }
+
+    /// Check if this was an L3 hit
+    pub fn is_l3_hit(&self) -> bool {
+        self.servicing_level == CacheLevel::L3
+    }
+
+    /// Check if this went to main memory
+    pub fn is_memory_access(&self) -> bool {
+        self.servicing_level == CacheLevel::Memory
+    }
+}
+
 /// Cache line state
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, JsonSchema)]
 pub enum CacheLineState {

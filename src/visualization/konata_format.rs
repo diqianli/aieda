@@ -6,43 +6,45 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use crate::memory::CacheAccessInfo;
 
 /// Pipeline stage identifiers used in Konata format.
+/// Uses standard Konata naming convention.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum StageId {
-    /// Fetch stage
-    F,
+    /// Instruction Fetch stage
+    IF,
     /// Decode stage
-    Dc,
+    DE,
     /// Rename stage
-    Rn,
+    RN,
     /// Dispatch stage
-    Ds,
+    DI,
     /// Issue stage
-    Is,
+    IS,
     /// Execute stage
-    Ex,
+    EX,
     /// Memory stage
-    Me,
-    /// Complete stage
-    Cm,
-    /// Retire/Commit stage
-    Rt,
+    ME,
+    /// Writeback stage
+    WB,
+    /// Retire stage
+    RR,
 }
 
 impl StageId {
     /// Get the display name for this stage.
     pub fn name(&self) -> &'static str {
         match self {
-            StageId::F => "F",
-            StageId::Dc => "Dc",
-            StageId::Rn => "Rn",
-            StageId::Ds => "Ds",
-            StageId::Is => "Is",
-            StageId::Ex => "Ex",
-            StageId::Me => "Me",
-            StageId::Cm => "Cm",
-            StageId::Rt => "Rt",
+            StageId::IF => "IF",
+            StageId::DE => "DE",
+            StageId::RN => "RN",
+            StageId::DI => "DI",
+            StageId::IS => "IS",
+            StageId::EX => "EX",
+            StageId::ME => "ME",
+            StageId::WB => "WB",
+            StageId::RR => "RR",
         }
     }
 }
@@ -51,30 +53,30 @@ impl StageId {
     /// Get the full name for this stage.
     pub fn full_name(&self) -> &'static str {
         match self {
-            StageId::F => "Fetch",
-            StageId::Dc => "Decode",
-            StageId::Rn => "Rename",
-            StageId::Ds => "Dispatch",
-            StageId::Is => "Issue",
-            StageId::Ex => "Execute",
-            StageId::Me => "Memory",
-            StageId::Cm => "Complete",
-            StageId::Rt => "Retire",
+            StageId::IF => "Instruction Fetch",
+            StageId::DE => "Decode",
+            StageId::RN => "Rename",
+            StageId::DI => "Dispatch",
+            StageId::IS => "Issue",
+            StageId::EX => "Execute",
+            StageId::ME => "Memory",
+            StageId::WB => "Writeback",
+            StageId::RR => "Retire",
         }
     }
 
     /// Get the HSL color for this stage.
     pub fn color(&self) -> (u16, u8, u8) {
         match self {
-            StageId::F => (200, 70, 60),   // Blue
-            StageId::Dc => (180, 60, 55),  // Cyan
-            StageId::Rn => (160, 50, 50),  // Teal
-            StageId::Ds => (140, 60, 55),  // Green
-            StageId::Is => (120, 70, 45),  // Yellow-green
-            StageId::Ex => (60, 80, 55),   // Yellow
-            StageId::Me => (30, 80, 55),   // Orange
-            StageId::Cm => (280, 60, 55),  // Purple
-            StageId::Rt => (320, 50, 50),  // Pink
+            StageId::IF => (200, 70, 60),   // Blue
+            StageId::DE => (180, 60, 55),   // Cyan
+            StageId::RN => (160, 50, 50),   // Teal
+            StageId::DI => (140, 60, 55),   // Green
+            StageId::IS => (120, 70, 45),   // Yellow-green
+            StageId::EX => (60, 80, 55),    // Yellow
+            StageId::ME => (30, 80, 55),    // Orange
+            StageId::WB => (280, 60, 55),   // Purple
+            StageId::RR => (320, 50, 50),   // Pink
         }
     }
 
@@ -228,6 +230,12 @@ impl KonataOp {
         lane.add_stage(KonataStage::new(stage_id.name(), start_cycle, end_cycle));
     }
 
+    /// Add a stage with a custom name to the main pipeline lane.
+    pub fn add_stage_with_name(&mut self, name: &str, start_cycle: u64, end_cycle: u64) {
+        let lane = self.lanes.entry("main".to_string()).or_insert_with(|| KonataLane::new("main"));
+        lane.add_stage(KonataStage::new(name, start_cycle, end_cycle));
+    }
+
     /// Add a dependency.
     pub fn add_dependency(&mut self, producer_id: u64, dep_type: KonataDependencyType) {
         self.prods.push(KonataDependencyRef {
@@ -345,6 +353,8 @@ pub struct StageTiming {
     pub complete_cycle: Option<u64>,
     /// Retire/commit cycle
     pub retire_cycle: Option<u64>,
+    /// Cache access information for memory operations
+    pub cache_access: Option<CacheAccessInfo>,
 }
 
 impl StageTiming {
@@ -407,88 +417,96 @@ impl StageTiming {
 
     /// Convert to Konata stages.
     /// Ensures each stage is visible and stages don't overlap.
-    /// For Complete stage, use the ORIGINAL Execute/Memory end cycle, not the adjusted end.
-    /// This ensures the dependency arrow points to the correct cycle.
+    /// For visualization, stages are shown sequentially even if timing shows overlap.
     pub fn to_stages(&self) -> Vec<KonataStage> {
         let mut stages = Vec::new();
+        let mut last_end = 0u64; // Track the end of the previous stage
         let mut exec_mem_end: Option<u64> = None; // Store original Execute/Memory end cycle
 
         // Helper function to add a stage with proper timing
-        // Note: Pipeline stages CAN overlap - an instruction can be in Issue (waiting)
-        // while another is in Execute. We should NOT force sequential timing.
-        fn add_stage_inner(
+        // Ensures stages don't overlap by making each stage start after the previous one
+        fn add_stage_sequential(
             stages: &mut Vec<KonataStage>,
             name: &str,
             start: u64,
             end: u64,
+            last_end: &mut u64,
         ) {
             // Ensure minimum duration of 1 cycle
             let adjusted_end = std::cmp::max(end, start + 1);
-            stages.push(KonataStage::new(name, start, adjusted_end));
+            // Make sure this stage starts after the previous one ends
+            let visual_start = std::cmp::max(start, *last_end);
+            let visual_end = std::cmp::max(adjusted_end, visual_start + 1);
+            stages.push(KonataStage::new(name, visual_start, visual_end));
+            *last_end = visual_end;
         }
 
-        // Add stages in pipeline order
+        // Add stages in pipeline order, ensuring sequential visualization
         if let (Some(s), Some(e)) = (self.fetch_start, self.fetch_end) {
-            add_stage_inner(&mut stages, "F", s, e);
+            add_stage_sequential(&mut stages, "IF", s, e, &mut last_end);
         }
         if let (Some(s), Some(e)) = (self.decode_start, self.decode_end) {
-            add_stage_inner(&mut stages, "Dc", s, e);
+            add_stage_sequential(&mut stages, "DE", s, e, &mut last_end);
         }
         if let (Some(s), Some(e)) = (self.rename_start, self.rename_end) {
-            add_stage_inner(&mut stages, "Rn", s, e);
+            add_stage_sequential(&mut stages, "RN", s, e, &mut last_end);
         }
         if let (Some(s), Some(e)) = (self.dispatch_start, self.dispatch_end) {
-            add_stage_inner(&mut stages, "Ds", s, e);
+            add_stage_sequential(&mut stages, "DI", s, e, &mut last_end);
         }
         if let (Some(s), Some(e)) = (self.issue_start, self.issue_end) {
-            add_stage_inner(&mut stages, "Is", s, e);
+            add_stage_sequential(&mut stages, "IS", s, e, &mut last_end);
         }
+
+        // Memory stage - with cache level breakdown if available
         if let (Some(s), Some(e)) = (self.memory_start, self.memory_end) {
-            // Store original Execute/Memory end cycle
             exec_mem_end = Some(e);
-            add_stage_inner(&mut stages, "Me", s, e);
+
+            // Check if we have cache access info to generate sub-stages
+            if let Some(ref cache_info) = self.cache_access {
+                // Generate sub-stages for each cache level in the hierarchy
+                for level_timing in &cache_info.level_timing {
+                    let stage_name = format!("ME:{}", level_timing.level.name());
+                    add_stage_sequential(
+                        &mut stages,
+                        &stage_name,
+                        level_timing.start_cycle,
+                        level_timing.end_cycle,
+                        &mut last_end,
+                    );
+                }
+            } else {
+                // No cache info - use single ME stage
+                add_stage_sequential(&mut stages, "ME", s, e, &mut last_end);
+            }
         } else if let (Some(s), Some(e)) = (self.execute_start, self.execute_end) {
-            add_stage_inner(&mut stages, "Ex", s, e);
-            // Store original Execute/Memory end for Complete stage timing
+            add_stage_sequential(&mut stages, "EX", s, e, &mut last_end);
             exec_mem_end = self.execute_end.or(self.memory_end);
         }
 
-        // Complete stage: starts at execute/memory end, ends at complete_cycle
-        // Note: Use original Execute/Memory end cycle for start, not the adjusted end
+        // Writeback stage: from Execute/Memory end to complete
         if let Some(c) = self.complete_cycle {
             if let Some(e) = exec_mem_end {
-                // Use original Execute/Memory END cycle for start time
-                let cm_start = e;
-                // Use complete_cycle for end time
-                let cm_end = c;
-                add_stage_inner(&mut stages, "Cm", cm_start, cm_end);
+                let wb_start = std::cmp::max(e, last_end);
+                let wb_end = std::cmp::max(c, wb_start + 1);
+                stages.push(KonataStage::new("WB", wb_start, wb_end));
+                last_end = wb_end;
             }
         }
 
-        // Retire stage: from Complete end to retire
-        // Rt MUST start AFTER Cm ends for correct visualization
+        // Retire stage: from Writeback end to retire
         if let Some(r) = self.retire_cycle {
-            // Calculate Cm end cycle (adjusted for minimum duration)
-            let cm_end_adjusted = if let Some(c) = self.complete_cycle {
-                if let Some(e) = exec_mem_end {
-                    // Cm ends at complete_cycle, adjusted to have min 1 cycle
-                    std::cmp::max(c, e + 1)
-                } else {
-                    c
-                }
-            } else {
-                // No Cm stage - use exec_mem_end
-                exec_mem_end.unwrap_or(r.saturating_sub(1))
-            };
-
-            // Rt starts at Cm end (adjusted), ensuring it's AFTER Cm
-            let rt_start = cm_end_adjusted;
-            // Rt ends at retire_cycle, ensuring at least 1 cycle duration
-            let rt_end = std::cmp::max(r, rt_start + 1);
-            add_stage_inner(&mut stages, "Rt", rt_start, rt_end);
+            let rr_start = last_end;
+            let rr_end = std::cmp::max(r, rr_start + 1);
+            stages.push(KonataStage::new("RR", rr_start, rr_end));
         }
 
         stages
+    }
+
+    /// Record cache access information for memory operations
+    pub fn record_cache_access(&mut self, cache_info: CacheAccessInfo) {
+        self.cache_access = Some(cache_info);
     }
 }
 
@@ -498,15 +516,15 @@ mod tests {
 
     #[test]
     fn test_stage_id_color() {
-        let color = StageId::F.css_color();
+        let color = StageId::IF.css_color();
         assert!(color.contains("hsl"));
     }
 
     #[test]
     fn test_konata_op() {
         let mut op = KonataOp::new(0, 0, 0x1000, "ADD");
-        op.add_stage(StageId::F, 0, 1);
-        op.add_stage(StageId::Dc, 1, 2);
+        op.add_stage(StageId::IF, 0, 1);
+        op.add_stage(StageId::DE, 1, 2);
 
         assert_eq!(op.lanes.len(), 1);
         assert_eq!(op.lanes["main"].stages.len(), 2);

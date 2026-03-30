@@ -5,6 +5,7 @@
 
 use crate::types::{Instruction, InstructionId};
 use crate::ooo::WindowEntry;
+use crate::memory::CacheAccessInfo;
 use ahash::AHashMap;
 use std::collections::VecDeque;
 
@@ -275,6 +276,13 @@ impl PipelineTracker {
         timing.record_memory(mem_start, mem_end);
     }
 
+    /// Record cache access information for a memory operation.
+    /// This enables visualization of cache hierarchy timing (ME:L1, ME:L2, ME:L3, ME:MEM).
+    pub fn record_cache_access(&mut self, id: InstructionId, cache_info: CacheAccessInfo) {
+        let timing = self.timings.entry(id).or_insert_with(StageTiming::new);
+        timing.record_cache_access(cache_info);
+    }
+
     /// Record an instruction completing.
     /// Only sets complete_cycle if not already set (to prevent overwriting with wrong values).
     pub fn record_complete(&mut self, id: InstructionId, cycle: u64) {
@@ -419,16 +427,22 @@ impl PipelineTracker {
 
             // Add stages
             for stage in timing.to_stages() {
+                // Handle standard stages
                 let stage_id = match stage.name.as_str() {
-                    "F" => StageId::F,
-                    "Dc" => StageId::Dc,
-                    "Rn" => StageId::Rn,
-                    "Ds" => StageId::Ds,
-                    "Is" => StageId::Is,
-                    "Ex" => StageId::Ex,
-                    "Me" => StageId::Me,
-                    "Cm" => StageId::Cm,
-                    "Rt" => StageId::Rt,
+                    "IF" => StageId::IF,
+                    "DE" => StageId::DE,
+                    "RN" => StageId::RN,
+                    "DI" => StageId::DI,
+                    "IS" => StageId::IS,
+                    "EX" => StageId::EX,
+                    "ME" => StageId::ME,
+                    "WB" => StageId::WB,
+                    "RR" => StageId::RR,
+                    // Handle cache level sub-stages (ME:L1, ME:L2, ME:L3, ME:MEM)
+                    _ if stage.name.starts_with("ME:") => {
+                        op.add_stage_with_name(&stage.name, stage.start_cycle, stage.end_cycle);
+                        continue;
+                    }
                     _ => continue,
                 };
                 op.add_stage(stage_id, stage.start_cycle, stage.end_cycle);
@@ -578,16 +592,22 @@ impl PipelineTracker {
 
             // Add stages
             for stage in timing.to_stages() {
+                // Handle standard stages
                 let stage_id = match stage.name.as_str() {
-                    "F" => StageId::F,
-                    "Dc" => StageId::Dc,
-                    "Rn" => StageId::Rn,
-                    "Ds" => StageId::Ds,
-                    "Is" => StageId::Is,
-                    "Ex" => StageId::Ex,
-                    "Me" => StageId::Me,
-                    "Cm" => StageId::Cm,
-                    "Rt" => StageId::Rt,
+                    "IF" => StageId::IF,
+                    "DE" => StageId::DE,
+                    "RN" => StageId::RN,
+                    "DI" => StageId::DI,
+                    "IS" => StageId::IS,
+                    "EX" => StageId::EX,
+                    "ME" => StageId::ME,
+                    "WB" => StageId::WB,
+                    "RR" => StageId::RR,
+                    // Handle cache level sub-stages (ME:L1, ME:L2, ME:L3, ME:MEM)
+                    _ if stage.name.starts_with("ME:") => {
+                        op.add_stage_with_name(&stage.name, stage.start_cycle, stage.end_cycle);
+                        continue;
+                    }
                     _ => continue,
                 };
                 op.add_stage(stage_id, stage.start_cycle, stage.end_cycle);

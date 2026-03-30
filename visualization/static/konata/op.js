@@ -6,17 +6,23 @@
 
 /**
  * Stage colors in HSL format
+ * Uses standard Konata naming convention
  */
 const STAGE_COLORS = {
-    'F':  { h: 200, s: 70, l: 60, name: 'Fetch' },
-    'Dc': { h: 180, s: 60, l: 55, name: 'Decode' },
-    'Rn': { h: 160, s: 50, l: 50, name: 'Rename' },
-    'Ds': { h: 140, s: 60, l: 55, name: 'Dispatch' },
-    'Is': { h: 120, s: 70, l: 50, name: 'Issue' },
-    'Ex': { h: 60,  s: 80, l: 55, name: 'Execute' },
-    'Me': { h: 30,  s: 80, l: 55, name: 'Memory' },
-    'Cm': { h: 280, s: 60, l: 55, name: 'Complete' },
-    'Rt': { h: 320, s: 50, l: 50, name: 'Retire' }
+    'IF': { h: 200, s: 70, l: 60, name: 'Instruction Fetch' },
+    'DE': { h: 180, s: 60, l: 55, name: 'Decode' },
+    'RN': { h: 160, s: 50, l: 50, name: 'Rename' },
+    'DI': { h: 140, s: 60, l: 55, name: 'Dispatch' },
+    'IS': { h: 120, s: 70, l: 50, name: 'Issue' },
+    'EX': { h: 60,  s: 80, l: 55, name: 'Execute' },
+    'ME': { h: 30,  s: 80, l: 55, name: 'Memory' },
+    // Cache hierarchy sub-stages (ME:L1, ME:L2, ME:L3, ME:MEM)
+    'ME:L1': { h: 30, s: 80, l: 55, name: 'L1 Cache' },
+    'ME:L2': { h: 35, s: 75, l: 50, name: 'L2 Cache' },
+    'ME:L3': { h: 40, s: 70, l: 45, name: 'L3 Cache' },
+    'ME:MEM': { h: 0, s: 80, l: 40, name: 'DDR Memory' },
+    'WB': { h: 280, s: 60, l: 55, name: 'Writeback' },
+    'RR': { h: 320, s: 50, l: 50, name: 'Retire' }
 };
 
 /**

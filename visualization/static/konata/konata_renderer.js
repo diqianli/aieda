@@ -600,6 +600,11 @@ class KonataRenderer {
             'IS': { fill: 'hsla(120, 70%, 45%, 0.7)', stroke: 'hsl(120, 70%, 45%)' },    // Issue - yellow-green
             'EX': { fill: 'hsla(60, 80%, 55%, 0.7)', stroke: 'hsl(60, 80%, 55%)' },      // Execute - yellow
             'ME': { fill: 'hsla(30, 80%, 55%, 0.7)', stroke: 'hsl(30, 80%, 55%)' },      // Memory - orange
+            // Cache hierarchy sub-stages
+            'ME:L1': { fill: 'hsla(30, 80%, 55%, 0.7)', stroke: 'hsl(30, 80%, 55%)' },   // L1 - orange
+            'ME:L2': { fill: 'hsla(35, 75%, 50%, 0.7)', stroke: 'hsl(35, 75%, 50%)' },   // L2 - darker orange
+            'ME:L3': { fill: 'hsla(40, 70%, 45%, 0.7)', stroke: 'hsl(40, 70%, 45%)' },   // L3 - even darker
+            'ME:MEM': { fill: 'hsla(0, 80%, 40%, 0.7)', stroke: 'hsl(0, 80%, 40%)' },    // DDR - red
             'WB': { fill: 'hsla(280, 60%, 55%, 0.7)', stroke: 'hsl(280, 60%, 55%)' },    // Writeback - purple
             'RR': { fill: 'hsla(320, 50%, 50%, 0.7)', stroke: 'hsl(320, 50%, 50%)' }       // Retire - pink
         };

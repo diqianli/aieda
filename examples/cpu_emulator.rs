@@ -90,9 +90,12 @@ impl Iterator for ElfInstructionSource {
                 instr = instr.with_disasm(decoded.disasm.clone());
 
                 // Handle memory operations
-                if decoded.mem_addr.is_some() {
-                    let addr = decoded.mem_addr.unwrap_or(0x10000 + self.count * 64);
-                    instr = instr.with_mem_access(addr, decoded.mem_size.unwrap_or(8), decoded.is_load);
+                // Check if this is a load/store by checking if mem_size is set
+                if decoded.mem_size.is_some() {
+                    // Use a synthetic address since we don't simulate actual memory state
+                    let addr = 0x10000 + self.count * 64;
+                    let size = decoded.mem_size.unwrap_or(8);
+                    instr = instr.with_mem_access(addr, size, decoded.is_load);
                 }
 
                 // Handle branches

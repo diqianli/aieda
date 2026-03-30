@@ -327,7 +327,9 @@ impl CPUEmulator {
 
     /// Execute ready instructions
     fn execute(&mut self) -> Result<()> {
+        eprintln!("DEBUG execute() called, cycle={}", self.current_cycle);
         let ready = self.ooo_engine.get_ready_instructions();
+        eprintln!("DEBUG execute() got {} ready instructions", ready.len());
 
         for (id, instr) in ready {
             self.ooo_engine.mark_executing(id);
@@ -339,6 +341,7 @@ impl CPUEmulator {
             self.visualization.pipeline_tracker_mut().record_issue(id, self.current_cycle);
 
             if instr.opcode_type.is_memory_op() {
+                eprintln!("DEBUG execute(): Found memory op id={}, mem_access.is_some()={}", id.0, instr.mem_access.is_some());
                 // Handle memory operation
                 if let Some(ref mem_access) = instr.mem_access {
                     self.handle_memory_op(id, mem_access)?;
@@ -387,6 +390,12 @@ impl CPUEmulator {
         self.pipeline_tracker.record_complete(id, complete_cycle);
         self.visualization.pipeline_tracker_mut().record_memory(id, self.current_cycle, complete_cycle);
         self.visualization.pipeline_tracker_mut().record_complete(id, complete_cycle);
+
+        // Record cache access info for visualization if available
+        if let Some(cache_info) = request.cache_info {
+            self.pipeline_tracker.record_cache_access(id, cache_info.clone());
+            self.visualization.pipeline_tracker_mut().record_cache_access(id, cache_info);
+        }
 
         // Record stats
         if access.is_load {

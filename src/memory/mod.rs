@@ -4,10 +4,12 @@ mod lsq;
 mod cache;
 mod controller;
 pub mod enhanced;
+mod ddr_controller;
 
 pub use lsq::{LoadStoreQueue, LsqHandle};
-pub use cache::{Cache, CacheConfig, CacheStats, CacheLineState};
+pub use cache::{Cache, CacheConfig, CacheStats, CacheLineState, CacheLevel, CacheLevelTiming, CacheAccessInfo};
 pub use controller::MemoryController;
+pub use ddr_controller::{DdrController, DdrAccessResult, DdrStats};
 pub use enhanced::{
     EnhancedCache, EnhancedCacheStats, Mshr, MshrEntry, MshrStats, MissType,
     Prefetcher, PrefetchRequest, PrefetcherStats, NextLinePrefetcher, StridePrefetcher,
@@ -31,7 +33,11 @@ pub struct MemorySubsystem {
     l1_cache: Cache,
     /// L2 Cache
     l2_cache: Cache,
-    /// Memory controller
+    /// L3 Cache (Last-level cache)
+    l3_cache: Cache,
+    /// DDR Memory Controller
+    ddr_controller: DdrController,
+    /// Memory controller (legacy, for fallback)
     controller: MemoryController,
     /// Configuration
     config: CPUConfig,
@@ -64,12 +70,30 @@ impl MemorySubsystem {
         };
         let l2_cache = Cache::new(l2_config)?;
 
+        let l3_config = CacheConfig {
+            size: config.l3_size,
+            associativity: config.l3_associativity,
+            line_size: config.l3_line_size,
+            hit_latency: config.l3_hit_latency,
+            name: "L3".to_string(),
+        };
+        let l3_cache = Cache::new(l3_config)?;
+
+        let ddr_controller = DdrController::new(
+            config.ddr_base_latency,
+            config.ddr_row_buffer_hit_bonus,
+            config.ddr_bank_conflict_penalty,
+            config.ddr_num_banks,
+        );
+
         let controller = MemoryController::new(config.l2_miss_latency, config.outstanding_requests);
 
         Ok(Self {
             lsq,
             l1_cache,
             l2_cache,
+            l3_cache,
+            ddr_controller,
             controller,
             config,
             current_cycle: 0,
@@ -79,7 +103,7 @@ impl MemorySubsystem {
 
     /// Process a load request
     pub fn load(&mut self, id: InstructionId, access: &MemAccess) -> MemoryRequest {
-        // Check L1 cache first (before adding to LSQ to avoid duplicate entries on retry)
+        // Check L1 cache first
         let l1_result = self.l1_cache.access(access.addr, true);
 
         match l1_result {
@@ -88,7 +112,11 @@ impl MemorySubsystem {
                 let lsq_entry = self.lsq.add_load(id, access.addr, access.size);
                 let complete_cycle = self.current_cycle + self.config.l1_hit_latency;
                 self.lsq.complete(lsq_entry);
-                MemoryRequest::completed(id, complete_cycle)
+                MemoryRequest::completed_with_cache_info(
+                    id,
+                    complete_cycle,
+                    CacheAccessInfo::l1_hit(self.current_cycle, self.config.l1_hit_latency),
+                )
             }
             _ => {
                 // L1 miss, check L2
@@ -96,23 +124,83 @@ impl MemorySubsystem {
 
                 match l2_result {
                     Ok(hit) if hit => {
-                        // L2 hit - add to LSQ and complete
+                        // L2 hit
                         let lsq_entry = self.lsq.add_load(id, access.addr, access.size);
-                        let complete_cycle = self.current_cycle + self.config.l2_hit_latency;
+                        let complete_cycle = self.current_cycle + self.config.l1_hit_latency + self.config.l2_hit_latency;
                         self.l1_cache.fill_line(access.addr);
                         self.lsq.complete(lsq_entry);
-                        MemoryRequest::completed(id, complete_cycle)
+                        MemoryRequest::completed_with_cache_info(
+                            id,
+                            complete_cycle,
+                            CacheAccessInfo::l2_hit(
+                                self.current_cycle,
+                                self.config.l1_hit_latency,
+                                self.config.l2_hit_latency,
+                            ),
+                        )
                     }
                     _ => {
-                        // L2 miss, go to memory
-                        // Always proceed with the request - use a very high outstanding limit
-                        // by not checking the limit (simplified model)
-                        let lsq_entry = self.lsq.add_load(id, access.addr, access.size);
-                        let complete_cycle = self.current_cycle + self.config.l2_miss_latency;
-                        self.l2_cache.fill_line(access.addr);
-                        self.l1_cache.fill_line(access.addr);
-                        self.lsq.complete(lsq_entry);
-                        MemoryRequest::completed(id, complete_cycle)
+                        // L2 miss, check L3
+                        let l3_result = self.l3_cache.access(access.addr, true);
+
+                        match l3_result {
+                            Ok(hit) if hit => {
+                                // L3 hit
+                                let lsq_entry = self.lsq.add_load(id, access.addr, access.size);
+                                let complete_cycle = self.current_cycle
+                                    + self.config.l1_hit_latency
+                                    + self.config.l2_hit_latency
+                                    + self.config.l3_hit_latency;
+                                self.l2_cache.fill_line(access.addr);
+                                self.l1_cache.fill_line(access.addr);
+                                self.lsq.complete(lsq_entry);
+                                MemoryRequest::completed_with_cache_info(
+                                    id,
+                                    complete_cycle,
+                                    CacheAccessInfo::l3_hit(
+                                        self.current_cycle,
+                                        self.config.l1_hit_latency,
+                                        self.config.l2_hit_latency,
+                                        self.config.l3_hit_latency,
+                                    ),
+                                )
+                            }
+                            _ => {
+                                // L3 miss, go to DDR memory
+                                let lsq_entry = self.lsq.add_load(id, access.addr, access.size);
+
+                                // Set DDR controller cycle and perform access
+                                self.ddr_controller.set_cycle(
+                                    self.current_cycle
+                                        + self.config.l1_hit_latency
+                                        + self.config.l2_hit_latency
+                                        + self.config.l3_hit_latency
+                                );
+                                let ddr_result = self.ddr_controller.access(access.addr);
+
+                                // Fill all cache levels
+                                self.l3_cache.fill_line(access.addr);
+                                self.l2_cache.fill_line(access.addr);
+                                self.l1_cache.fill_line(access.addr);
+                                self.lsq.complete(lsq_entry);
+
+                                let cache_info = CacheAccessInfo::memory_access(
+                                    self.current_cycle,
+                                    self.config.l1_hit_latency,
+                                    self.config.l2_hit_latency,
+                                    self.config.l3_hit_latency,
+                                    ddr_result.latency,
+                                    ddr_result.row_hit,
+                                    ddr_result.bank,
+                                );
+
+                                MemoryRequest::completed_with_cache_info(
+                                    id,
+                                    ddr_result.complete_cycle,
+                                    cache_info,
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -124,12 +212,32 @@ impl MemorySubsystem {
         // Add to LSQ
         let lsq_entry = self.lsq.add_store(id, access.addr, access.size);
 
-        // Write-through to L1 (simplified model)
-        self.l1_cache.access(access.addr, false);
+        // Check L1 cache first
+        let l1_result = self.l1_cache.access(access.addr, false);
 
-        // Store completes immediately (write-back cache model)
+        let complete_cycle = self.current_cycle + self.config.l1_hit_latency;
         self.lsq.complete(lsq_entry);
-        MemoryRequest::completed(id, self.current_cycle + 1)
+
+        match l1_result {
+            Ok(hit) if hit => {
+                // L1 hit
+                MemoryRequest::completed_with_cache_info(
+                    id,
+                    complete_cycle,
+                    CacheAccessInfo::l1_hit(self.current_cycle, self.config.l1_hit_latency),
+                )
+            }
+            _ => {
+                // L1 miss - for stores, we still complete after L1 latency
+                // In a real system, stores would write through the hierarchy
+                // For visualization, show it as an L1 hit (simplified)
+                MemoryRequest::completed_with_cache_info(
+                    id,
+                    complete_cycle,
+                    CacheAccessInfo::l1_hit(self.current_cycle, self.config.l1_hit_latency),
+                )
+            }
+        }
     }
 
     /// Advance simulation by one cycle
@@ -158,6 +266,16 @@ impl MemorySubsystem {
         self.l2_cache.stats()
     }
 
+    /// Get L3 cache statistics
+    pub fn l3_stats(&self) -> &CacheStats {
+        self.l3_cache.stats()
+    }
+
+    /// Get DDR controller statistics
+    pub fn ddr_stats(&self) -> &DdrStats {
+        self.ddr_controller.stats()
+    }
+
     /// Get the number of outstanding requests
     pub fn outstanding_count(&self) -> u64 {
         self.outstanding_requests
@@ -167,13 +285,17 @@ impl MemorySubsystem {
     pub fn reset_stats(&mut self) {
         self.l1_cache.reset_stats();
         self.l2_cache.reset_stats();
+        self.l3_cache.reset_stats();
+        self.ddr_controller.reset_stats();
     }
 
     /// Get combined memory statistics
-    pub fn get_stats(&self) -> MemoryStats {
-        MemoryStats {
+    pub fn get_stats(&self) -> CacheHierarchyStats {
+        CacheHierarchyStats {
             l1_stats: self.l1_cache.stats().clone(),
             l2_stats: self.l2_cache.stats().clone(),
+            l3_stats: self.l3_cache.stats().clone(),
+            ddr_stats: self.ddr_controller.stats().clone(),
             lsq_occupancy: self.lsq.occupancy(),
             lsq_capacity: self.config.lsq_size,
             outstanding_requests: self.outstanding_requests,
@@ -187,6 +309,8 @@ pub struct MemoryRequest {
     pub instruction_id: InstructionId,
     pub state: MemoryRequestState,
     pub complete_cycle: Option<u64>,
+    /// Cache access information for visualization
+    pub cache_info: Option<CacheAccessInfo>,
 }
 
 impl MemoryRequest {
@@ -195,6 +319,16 @@ impl MemoryRequest {
             instruction_id: id,
             state: MemoryRequestState::Completed,
             complete_cycle: Some(cycle),
+            cache_info: None,
+        }
+    }
+
+    pub fn completed_with_cache_info(id: InstructionId, cycle: u64, cache_info: CacheAccessInfo) -> Self {
+        Self {
+            instruction_id: id,
+            state: MemoryRequestState::Completed,
+            complete_cycle: Some(cycle),
+            cache_info: Some(cache_info),
         }
     }
 
@@ -203,6 +337,7 @@ impl MemoryRequest {
             instruction_id: id,
             state: MemoryRequestState::Pending,
             complete_cycle: None,
+            cache_info: None,
         }
     }
 
@@ -218,15 +353,20 @@ pub enum MemoryRequestState {
     Completed,
 }
 
-/// Combined memory statistics
+/// Cache hierarchy statistics (detailed)
 #[derive(Debug, Clone)]
-pub struct MemoryStats {
+pub struct CacheHierarchyStats {
     pub l1_stats: CacheStats,
     pub l2_stats: CacheStats,
+    pub l3_stats: CacheStats,
+    pub ddr_stats: DdrStats,
     pub lsq_occupancy: usize,
     pub lsq_capacity: usize,
     pub outstanding_requests: u64,
 }
+
+// Re-export for backward compatibility
+pub use CacheHierarchyStats as DetailedMemoryStats;
 
 /// CHI-integrated memory subsystem
 pub struct ChiMemorySubsystem {
@@ -570,10 +710,12 @@ impl ChiMemorySubsystem {
     }
 
     /// Get combined memory statistics
-    pub fn get_stats(&self) -> MemoryStats {
-        MemoryStats {
+    pub fn get_stats(&self) -> CacheHierarchyStats {
+        CacheHierarchyStats {
             l1_stats: self.l1_cache.stats().clone(),
             l2_stats: self.l2_cache.stats().clone(),
+            l3_stats: CacheStats::default(),
+            ddr_stats: DdrStats::default(),
             lsq_occupancy: self.lsq.occupancy(),
             lsq_capacity: self.config.lsq_size,
             outstanding_requests: self.outstanding_requests,

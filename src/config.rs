@@ -47,7 +47,27 @@ pub struct CPUConfig {
     /// L2 cache hit latency in cycles
     pub l2_hit_latency: u64,
 
-    // External Memory
+    // L3 Cache
+    /// L3 cache size in bytes (8-32 MB typical)
+    pub l3_size: usize,
+    /// L3 cache associativity (16-32 way typical)
+    pub l3_associativity: usize,
+    /// L3 cache line size in bytes
+    pub l3_line_size: usize,
+    /// L3 cache hit latency in cycles (30-50 typical)
+    pub l3_hit_latency: u64,
+
+    // DDR Memory Controller
+    /// DDR base latency in cycles (CAS + RAS, ~100-200)
+    pub ddr_base_latency: u64,
+    /// DDR row buffer hit bonus (cycles saved if row open)
+    pub ddr_row_buffer_hit_bonus: u64,
+    /// DDR bank conflict penalty (cycles added)
+    pub ddr_bank_conflict_penalty: u64,
+    /// Number of DDR banks
+    pub ddr_num_banks: usize,
+
+    // External Memory (deprecated - use DDR config)
     /// L2 miss latency (memory access) in cycles
     pub l2_miss_latency: u64,
 
@@ -120,6 +140,18 @@ impl Default for CPUConfig {
             l2_associativity: 8,
             l2_line_size: 64,
             l2_hit_latency: 12,
+
+            // L3 Cache (8MB, 16-way, 64B line, 40 cycle hit)
+            l3_size: 8 * 1024 * 1024,
+            l3_associativity: 16,
+            l3_line_size: 64,
+            l3_hit_latency: 40,
+
+            // DDR Memory Controller (DDR4-3200 typical)
+            ddr_base_latency: 150,
+            ddr_row_buffer_hit_bonus: 30,
+            ddr_bank_conflict_penalty: 20,
+            ddr_num_banks: 8,
 
             // External Memory
             l2_miss_latency: 100,
@@ -230,6 +262,12 @@ impl CPUConfig {
             ));
         }
 
+        if self.l3_line_size != 64 && self.l3_line_size != 128 {
+            return Err(crate::types::EmulatorError::ConfigError(
+                "l3_line_size must be 64 or 128 bytes".to_string(),
+            ));
+        }
+
         // Check that cache sizes are powers of 2 and properly divisible
         if !is_power_of_two(self.l1_size) {
             return Err(crate::types::EmulatorError::ConfigError(
@@ -243,8 +281,15 @@ impl CPUConfig {
             ));
         }
 
+        if !is_power_of_two(self.l3_size) {
+            return Err(crate::types::EmulatorError::ConfigError(
+                "l3_size must be a power of 2".to_string(),
+            ));
+        }
+
         let l1_sets = self.l1_size / (self.l1_associativity * self.l1_line_size);
         let l2_sets = self.l2_size / (self.l2_associativity * self.l2_line_size);
+        let l3_sets = self.l3_size / (self.l3_associativity * self.l3_line_size);
 
         if !is_power_of_two(l1_sets) {
             return Err(crate::types::EmulatorError::ConfigError(
@@ -255,6 +300,12 @@ impl CPUConfig {
         if !is_power_of_two(l2_sets) {
             return Err(crate::types::EmulatorError::ConfigError(
                 "L2 cache configuration results in non-power-of-2 sets".to_string(),
+            ));
+        }
+
+        if !is_power_of_two(l3_sets) {
+            return Err(crate::types::EmulatorError::ConfigError(
+                "L3 cache configuration results in non-power-of-2 sets".to_string(),
             ));
         }
 
@@ -269,6 +320,11 @@ impl CPUConfig {
     /// Get L2 cache number of sets
     pub fn l2_sets(&self) -> usize {
         self.l2_size / (self.l2_associativity * self.l2_line_size)
+    }
+
+    /// Get L3 cache number of sets
+    pub fn l3_sets(&self) -> usize {
+        self.l3_size / (self.l3_associativity * self.l3_line_size)
     }
 
     /// Get the period of one cycle in nanoseconds
