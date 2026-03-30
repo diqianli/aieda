@@ -646,7 +646,10 @@ class KonataRenderer {
                         ctx.stroke();
                     }
 
-                    // Draw cycle numbers (relative to stage start)
+                    // Draw content in each cycle cell
+                    // First cycle: show stage name
+                    // Last cycle: show stage name
+                    // Middle cycles: show cycle number
                     ctx.fillStyle = '#ffffff';
                     ctx.font = 'bold 10px monospace';
                     ctx.textAlign = 'center';
@@ -658,10 +661,22 @@ class KonataRenderer {
                         const cycleCenterX = (cycleX + cycleEndX) / 2;
                         const cycleWidthPx = cycleEndX - cycleX;
 
-                        // Only draw number if there's enough space
+                        // Only draw if there's enough space
                         if (cycleWidthPx > 8) {
-                            // c is 0-indexed cycle number within this stage
-                            ctx.fillText(c.toString(), cycleCenterX, stageY + stageHeight / 2);
+                            const isFirst = (c === 0);
+                            const isLast = (c === numCycles - 1);
+
+                            if (isFirst || isLast) {
+                                // Show stage name on first and last cycle
+                                ctx.font = 'bold 10px monospace';
+                                ctx.fillText(stage.name, cycleCenterX, stageY + stageHeight / 2);
+                            } else {
+                                // Show cycle number (relative to stage start) in middle cycles
+                                ctx.font = '9px monospace';
+                                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                                ctx.fillText(c.toString(), cycleCenterX, stageY + stageHeight / 2);
+                                ctx.fillStyle = '#ffffff';
+                            }
                         }
                     }
 
