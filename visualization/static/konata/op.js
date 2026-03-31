@@ -41,7 +41,14 @@ class Stage {
         this.name = name;
         this.startCycle = startCycle;
         this.endCycle = endCycle;
-        this.color = STAGE_COLORS[name] || { h: 0, s: 0, l: 50, name: name };
+
+        // Handle DI with waiting period (e.g., "DI:5-210")
+        // Use the same color as the base stage
+        let colorKey = name;
+        if (name.startsWith('DI:')) {
+            colorKey = 'DI';  // Use DI's color for DI:5-210 stages
+        }
+        this.color = STAGE_COLORS[colorKey] || { h: 0, s: 0, l: 50, name: name };
     }
 
     get duration() {

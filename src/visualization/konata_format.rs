@@ -455,6 +455,13 @@ impl StageTiming {
             add_stage_sequential(&mut stages, "DI", s, e, &mut last_end);
         }
         if let (Some(s), Some(e)) = (self.issue_start, self.issue_end) {
+            // Check if there's a gap between DI end and IS start
+            // If yes, add the gap info to the DI stage name like "DI:5-210"
+            if s > last_end {
+                // Add a DI stage with the waiting period info
+                let di_with_wait = format!("DI:{}-{}", last_end, s - 1);
+                add_stage_sequential(&mut stages, &di_with_wait, last_end, s, &mut last_end);
+            }
             add_stage_sequential(&mut stages, "IS", s, e, &mut last_end);
         }
 

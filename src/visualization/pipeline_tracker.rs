@@ -443,6 +443,11 @@ impl PipelineTracker {
                         op.add_stage_with_name(&stage.name, stage.start_cycle, stage.end_cycle);
                         continue;
                     }
+                    // Handle DI with waiting period (DI:5-210)
+                    _ if stage.name.starts_with("DI:") => {
+                        op.add_stage_with_name(&stage.name, stage.start_cycle, stage.end_cycle);
+                        continue;
+                    }
                     _ => continue,
                 };
                 op.add_stage(stage_id, stage.start_cycle, stage.end_cycle);
@@ -605,6 +610,11 @@ impl PipelineTracker {
                     "RR" => StageId::RR,
                     // Handle cache level sub-stages (ME:L1, ME:L2, ME:L3, ME:MEM)
                     _ if stage.name.starts_with("ME:") => {
+                        op.add_stage_with_name(&stage.name, stage.start_cycle, stage.end_cycle);
+                        continue;
+                    }
+                    // Handle DI with waiting period (DI:5-210)
+                    _ if stage.name.starts_with("DI:") => {
                         op.add_stage_with_name(&stage.name, stage.start_cycle, stage.end_cycle);
                         continue;
                     }
