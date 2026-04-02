@@ -82,6 +82,34 @@ ARMv8.1-A引入了LSE（Large System Extension）原子指令集，如CASAL（Co
           contended: '~100-300 cycles',
           numaCrossNode: '~500-2000 cycles'
         }
+      },
+      cmhHints: {
+        shuh: {
+          enabled: true,
+          description: '向内存系统提示即将发生共享更新操作。如果下一条指令产生显式内存效应，内存系统可为共享更新做准备。',
+          codeLocation: '在进入高竞争循环前，SHUH指令提示硬件即将进行共享锁变量更新',
+          benefit: '理论收益：在高竞争场景下可能减少5-15%的自旋时间（未经验证）',
+          warnings: [
+            '仅在确认存在高竞争（多核心同时竞争）时使用',
+            '需要在实际硬件上测试验证效果',
+            '某些处理器可能忽略这些提示，增加指令开销',
+            '不适用于单线程或低竞争场景'
+          ],
+          experimental: true
+        },
+        stcph: {
+          enabled: true,
+          description: '向内存系统提示优先处理并发存储操作。如果下一条指令是内存访问，内存系统应优先处理。',
+          codeLocation: '在释放锁前，STCPH指令提示硬件这个存储操作需要优先处理',
+          benefit: '理论收益：可能减少其他核心的等待延迟（未经验证）',
+          warnings: [
+            'STCPH是STEOR/STEORL（原子异或）的别名',
+            '仅在确认存在高竞争时使用',
+            '需要实测验证收益',
+            '某些处理器可能忽略这些提示'
+          ],
+          experimental: true
+        }
       }
     },
     {
@@ -197,6 +225,32 @@ function unlock(l):
           uncontended: '~10-20 cycles',
           contended: '~80-200 cycles',
           numaCrossNode: '~300-1000 cycles'
+        }
+      },
+      cmhHints: {
+        shuh: {
+          enabled: true,
+          description: '向内存系统提示即将发生共享更新操作。多个核心同时原子递增next_ticket，产生缓存行竞争。',
+          codeLocation: '在原子递增前，SHUH指令提示硬件即将更新共享计数器',
+          benefit: '理论收益：SHUH可能优化这个高频原子递增操作的缓存行为（未经验证）',
+          warnings: [
+            '只有在多核心同时竞争时才有效',
+            'WFE/SEV配合使用更重要，CMH hints是额外优化',
+            '需要实测验证收益'
+          ],
+          experimental: true
+        },
+        stcph: {
+          enabled: true,
+          description: '向内存系统提示优先处理并发存储操作。now_serving被所有等待者轮询。',
+          codeLocation: '在更新now_serving前，STCPH指令提示硬件这是关键更新',
+          benefit: '理论收益：可能减少其他核心的等待延迟（未经验证）',
+          warnings: [
+            '只有在多核心同时竞争时才有效',
+            '需要实测验证收益',
+            '某些处理器可能忽略这些提示'
+          ],
+          experimental: true
         }
       }
     },
@@ -680,6 +734,32 @@ function barrier_wait(b):
           uncontended: '~50-100 cycles',
           contended: '~500-2000 cycles',
           numaCrossNode: '~2000-10000 cycles'
+        }
+      },
+      cmhHints: {
+        shuh: {
+          enabled: true,
+          description: '向内存系统提示即将发生共享更新操作。count计数器被所有线程原子更新。',
+          codeLocation: '在原子递增计数器前，SHUH指令提示硬件即将更新共享变量',
+          benefit: '理论收益：可能优化计数器的缓存一致性协议（未经验证）',
+          warnings: [
+            '屏障同步的开销主要在算法层面，CMH hints的收益可能很小',
+            '更重要的是优化屏障使用频率和算法设计',
+            '实测验证非常必要'
+          ],
+          experimental: true
+        },
+        stcph: {
+          enabled: true,
+          description: '向内存系统提示优先处理并发存储操作。cond_broadcast需要尽快唤醒所有等待线程。',
+          codeLocation: '在广播唤醒前，STCPH指令提示硬件这是关键同步操作',
+          benefit: '理论收益：可能优先处理这个广播操作（未经验证）',
+          warnings: [
+            '屏障同步的开销主要在算法层面',
+            '需要实测验证收益',
+            '某些处理器可能忽略这些提示'
+          ],
+          experimental: true
         }
       }
     },

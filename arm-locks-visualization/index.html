@@ -31,6 +31,23 @@
     <!-- Category Filters -->
     <div id="category-filters" class="category-filters"></div>
 
+    <!-- FEAT_CMH Legend -->
+    <div class="cmh-legend-section">
+      <div class="cmh-legend-title">⚠️ FEAT_CMH 竞争管理提示 (ARMv8.7/Armv9.0) - 实验性功能</div>
+      <div class="cmh-legend-content">
+        <div class="cmh-legend-item">
+          <span class="cmh-badge shuh experimental">SHUH</span>
+          <span>Shared Update Hint - 提示共享变量将被多PE更新</span>
+        </div>
+        <div class="cmh-legend-item">
+          <span class="cmh-badge stcph experimental">STCPH</span>
+          <span>Store Concurrent Priority Hint - 提示存储操作需优先处理 (STEOR/STEORL别名)</span>
+        </div>
+      </div>
+      <p class="cmh-legend-note">⚠️ <strong>实验性功能</strong>：SHUH/STCPH是可选提示指令，处理器可选择实现(否则为NOP)。缺乏实际性能测试数据，未经验证。仅展示在精选的高竞争场景：简单自旋锁、Ticket自旋锁、线程屏障。</p>
+      <p class="cmh-legend-warning">使用前提：处理器必须实现FEAT_CMH扩展（检测：ID_AA64ISAR3_EL1.LSCSHINT）+ 多核/多线程环境 + 真正的跨核共享变量竞争 + 经过实际性能测试验证。</p>
+    </div>
+
     <!-- Performance Comparison Section -->
     <section class="chart-section">
       <div class="section-header">
@@ -101,6 +118,9 @@
           </div>
         </div>
       </div>
+
+      <!-- Hardware Tendency Comparison -->
+      <div id="hardware-tendency-comparison"></div>
     </section>
 
     <!-- Decision Tree Section -->

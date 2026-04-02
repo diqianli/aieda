@@ -265,6 +265,65 @@ body::after {
   font-weight: 400;
 }
 
+/* CMH Badges on lock cards */
+.cmh-badges {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.cmh-badge {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cmh-badge.shuh {
+  background: rgba(0, 209, 255, 0.2);
+  color: #00d1ff;
+  border: 1px solid rgba(0, 209, 255, 0.3);
+}
+
+.cmh-badge.stcph {
+  background: rgba(255, 149, 0, 0.2);
+  color: #ff9500;
+  border: 1px solid rgba(255, 149, 0, 0.3);
+}
+
+/* Experimental badge styling */
+.cmh-badge.experimental {
+  position: relative;
+}
+
+.cmh-badge.experimental::after {
+  content: '⚠';
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  font-size: 7px;
+  background: var(--bg-card);
+  border-radius: 50%;
+  width: 10px;
+  height: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* CMH Legend Warning */
+.cmh-legend-warning {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: rgba(255, 149, 0, 0.1);
+  border-left: 3px solid var(--primary-orange);
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
 .category-tag {
   padding: 4px 10px;
   border-radius: 12px;
@@ -280,6 +339,43 @@ body::after {
 .category-tag.hierarchical { background: rgba(255, 149, 0, 0.2); color: var(--primary-orange); }
 .category-tag.barrier { background: rgba(52, 199, 89, 0.2); color: var(--primary-green); }
 .category-tag.optimization { background: rgba(175, 82, 222, 0.2); color: var(--primary-purple); }
+
+/* CMH Legend Section */
+.cmh-legend-section {
+  margin: 20px 0;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(42, 113, 255, 0.06), rgba(255, 149, 0, 0.06));
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cmh-legend-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary-cyan);
+  margin-bottom: 12px;
+}
+
+.cmh-legend-content {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.cmh-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.cmh-legend-note {
+  margin: 12px 0 0 0;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+}
 
 .expand-icon {
   color: var(--text-muted);
@@ -1968,4 +2064,83 @@ body::after {
   .cores-perf-table td {
     padding: 6px 8px;
   }
+}
+
+/* ========== FEAT_CMH Hints Section ========== */
+.cmh-hints-section {
+  margin-top: 20px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(42, 113, 255, 0.08), rgba(255, 149, 0, 0.08));
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cmh-hints-section h4 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary-cyan);
+}
+
+.cmh-intro {
+  margin: 0 0 12px 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.hint-card {
+  margin-bottom: 12px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  border-left: 3px solid;
+}
+
+.hint-card.shuh { border-left-color: var(--primary-cyan); }
+.hint-card.stcph { border-left-color: var(--primary-orange); }
+
+.hint-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.hint-badge {
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.hint-full {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.hint-desc {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.hint-code {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.code-label {
+  color: var(--text-muted);
+}
+
+.hint-code code {
+  padding: 2px 6px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  font-family: "SF Mono", monospace;
+  color: var(--primary-cyan);
 }

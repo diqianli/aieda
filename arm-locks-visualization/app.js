@@ -126,12 +126,24 @@ const App = {
       const category = LockData.categories.find(c => c.id === lock.category);
       const isExpanded = this.state.expandedCards.has(lock.id);
 
+      // Check CMH hints
+      const hasShuh = lock.cmhHints?.shuh?.enabled;
+      const hasStcph = lock.cmhHints?.stcph?.enabled;
+      const isExperimental = lock.cmhHints?.shuh?.experimental || lock.cmhHints?.stcph?.experimental;
+      const cmhBadges = (hasShuh || hasStcph) ? `
+        <div class="cmh-badges">
+          ${hasShuh ? `<span class="cmh-badge shuh${isExperimental ? ' experimental' : ''}" title="SHUH - Shared Update Hint${isExperimental ? ' (实验性)' : ''}">SHUH</span>` : ''}
+          ${hasStcph ? `<span class="cmh-badge stcph${isExperimental ? ' experimental' : ''}" title="STCPH - Store Concurrent Priority Hint${isExperimental ? ' (实验性)' : ''}">STCPH</span>` : ''}
+        </div>
+      ` : '';
+
       html += `
         <div class="lock-card ${isExpanded ? 'expanded' : ''}" data-lock-id="${lock.id}">
           <div class="lock-card-header" onclick="App.toggleCard('${lock.id}')">
             <div class="lock-card-title">
               <h3>${lock.name}</h3>
               <span class="name-en">${lock.nameEn}</span>
+              ${cmhBadges}
             </div>
             <div style="display: flex; align-items: center; gap: 12px;">
               <span class="category-tag ${lock.category}" style="background: ${category.color}20; color: ${category.color}">
@@ -232,6 +244,16 @@ const App = {
       </div>
     `;
 
+    // Hardware Tendency (if available)
+    if (lock.hardwareTendency) {
+      html += `
+        <div class="section">
+          <div class="section-title">硬件原子倾向</div>
+          ${this.renderHardwareTendency(lock)}
+        </div>
+      `;
+    }
+
     // View Details Button
     html += `
       <div class="section">
@@ -239,6 +261,12 @@ const App = {
           <span>查看完整详情</span>
           <span class="btn-icon">→</span>
         </a>
+        ${lock.id === 'pthread-barrier' ? `
+          <a href="barrier.html" class="barrier-deep-link">
+            <span class="link-icon">📊</span>
+            屏障深度分析
+          </a>
+        ` : ''}
       </div>
     `;
 
@@ -270,6 +298,39 @@ const App = {
         </div>
       `;
     }).join('');
+  },
+
+  /**
+   * Render hardware tendency for lock card
+   */
+  renderHardwareTendency: function(lock) {
+    const ht = lock.hardwareTendency;
+    const meta = LockData.hardwareTendencyMeta[ht.type];
+
+    // Calculate marker position
+    const markerPos = ht.tendency + '%';
+    const markerColor = ht.tendency < 40 ? '#00d1ff' : ht.tendency < 60 ? '#af52de' : '#ff9500';
+
+    return `
+      <div class="tendency-section">
+        <div class="tendency-header">
+          <div class="tendency-title">原子操作模式</div>
+          <span class="tendency-badge ${ht.type}">
+            <span>${meta.icon}</span>
+            ${meta.nameEn}
+          </span>
+        </div>
+        <div class="tendency-spectrum">
+          <div class="tendency-marker" style="left: ${markerPos}; border-color: ${markerColor}"></div>
+        </div>
+        <div class="tendency-labels">
+          <div class="tendency-label"><span style="color: #00d1ff">◉</span> 近端</div>
+          <div class="tendency-value">${ht.tendency}%</div>
+          <div class="tendency-label"><span style="color: #ff9500">◎</span> 远端</div>
+        </div>
+        <div class="tendency-description">${ht.description}</div>
+      </div>
+    `;
   },
 
   /**
