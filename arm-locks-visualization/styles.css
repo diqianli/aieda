@@ -804,3 +804,1168 @@ body::after {
 .view-details-btn:hover .btn-icon {
   transform: translateX(4px);
 }
+
+/* ========== Hardware Tendency Visualization ========== */
+
+/* Tendency spectrum bar container */
+.tendency-section {
+  margin-bottom: 12px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+}
+
+.tendency-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.tendency-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+}
+
+.tendency-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tendency-badge.near {
+  background: rgba(0, 209, 255, 0.2);
+  color: var(--primary-cyan);
+}
+
+.tendency-badge.far {
+  background: rgba(255, 149, 0, 0.2);
+  color: var(--primary-orange);
+}
+
+.tendency-badge.mixed {
+  background: rgba(175, 82, 222, 0.2);
+  color: var(--primary-purple);
+}
+
+/* Tendency spectrum bar */
+.tendency-spectrum {
+  position: relative;
+  height: 14px;
+  background: linear-gradient(90deg,
+    var(--primary-cyan) 0%,
+    var(--primary-purple) 50%,
+    var(--primary-orange) 100%
+  );
+  border-radius: 7px;
+  margin-top: 6px;
+}
+
+.tendency-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.tendency-label {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.tendency-marker {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.tendency-marker:hover {
+  transform: translate(-50%, -50%) scale(1.2);
+}
+
+.tendency-marker::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: white;
+}
+
+.tendency-value {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 4px;
+  color: var(--text-secondary);
+}
+
+/* Tendency description */
+.tendency-description {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-top: 6px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+}
+
+/* ARM Details in tendency section */
+.tendency-arm-details {
+  margin-top: 8px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  border-left: 2px solid var(--primary-cyan);
+}
+
+.tendency-arm-details dt {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 6px;
+  margin-bottom: 2px;
+}
+
+.tendency-arm-details dd {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-family: "SF Mono", "Monaco", monospace;
+  margin-left: 0;
+  margin-bottom: 6px;
+}
+
+/* Performance impact table */
+.tendency-performance-table {
+  width: 100%;
+  margin-top: 8px;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.tendency-performance-table th,
+.tendency-performance-table td {
+  padding: 6px 8px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.tendency-performance-table th {
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
+
+.tendency-performance-table td {
+  color: var(--text-secondary);
+  font-family: "SF Mono", "Monaco", monospace;
+}
+
+/* Hardware tendency comparison section on main page */
+#hardware-tendency-comparison {
+  margin-top: 20px;
+  padding: 16px;
+  background: linear-gradient(140deg, var(--bg-card), rgba(18, 19, 28, 0.55));
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  backdrop-filter: blur(18px);
+}
+
+.tendency-comparison-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+}
+
+.tendency-comparison-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.tendency-comparison-item {
+  flex: 1;
+  min-width: 120px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+}
+
+.tendency-comparison-name {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tendency-comparison-bar-mini {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  position: relative;
+}
+
+.tendency-comparison-marker {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Topology diagram canvas */
+.topology-canvas {
+  width: 100%;
+  max-width: 400px;
+  height: 220px;
+  border-radius: 12px;
+  background: linear-gradient(140deg, rgba(0, 0, 0, 0.4), rgba(10, 11, 16, 0.6));
+  border: 1px solid var(--border-color);
+}
+
+.topology-controls {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  justify-content: center;
+}
+
+.topology-toggle-btn {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.topology-toggle-btn.active {
+  background: var(--primary-blue);
+  border-color: var(--primary-blue);
+  color: white;
+}
+
+.topology-toggle-btn:hover:not(.active) {
+  border-color: var(--primary-blue);
+}
+
+/* Barrier deep analysis page link */
+.barrier-deep-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--primary-green), var(--primary-cyan));
+  color: white;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  margin-top: 8px;
+}
+
+.barrier-deep-link:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(52, 199, 89, 0.3);
+}
+
+.barrier-deep-link .link-icon {
+  font-size: 14px;
+  transition: transform 0.2s ease;
+}
+
+.barrier-deep-link:hover .link-icon {
+  transform: translateX(4px);
+}
+
+/* ========== Barrier Deep Analysis Page ========== */
+
+.barrier-page-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.barrier-page-header h1 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  background: linear-gradient(135deg, var(--primary-green), var(--primary-cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.barrier-page-header .subtitle {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: 13px;
+}
+
+.barrier-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 13px;
+  margin-bottom: 16px;
+  transition: all 0.2s ease;
+}
+
+.barrier-back-link:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-primary);
+}
+
+/* Barrier overview section */
+.barrier-overview {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.barrier-overview-card {
+  padding: 20px;
+  background: linear-gradient(140deg, var(--bg-card), rgba(18, 19, 28, 0.55));
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  backdrop-filter: blur(18px);
+}
+
+.barrier-overview-card h3 {
+  margin: 0 0 12px 0;
+  font-size: 15px;
+  color: var(--primary-green);
+}
+
+.barrier-overview-card p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+/* Scenario selector tabs */
+.barrier-scenarios-section {
+  margin-bottom: 24px;
+}
+
+.scenario-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.scenario-tab {
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.scenario-tab:hover {
+  background: var(--bg-card-hover);
+}
+
+.scenario-tab.active {
+  border-color: transparent;
+  color: white;
+}
+
+.scenario-tab.active[data-scenario="mapreduce-spark"] {
+  background: linear-gradient(135deg, #ff9500, #ff6b00);
+}
+
+.scenario-tab.active[data-scenario="mpi-collective"] {
+  background: linear-gradient(135deg, var(--primary-blue), #1a5eff);
+}
+
+.scenario-tab.active[data-scenario="deep-learning"] {
+  background: linear-gradient(135deg, var(--primary-purple), #8b3ddc);
+}
+
+.scenario-tab.active[data-scenario="database-parallel"] {
+  background: linear-gradient(135deg, var(--primary-green), #28a745);
+}
+
+.scenario-tab.active[data-scenario="scientific-solver"] {
+  background: linear-gradient(135deg, var(--primary-cyan), #00b3d4);
+}
+
+.scenario-tab.active[data-scenario="vulkan-graphics"] {
+  background: linear-gradient(135deg, var(--primary-pink), #d63384);
+}
+
+.scenario-tab.active[data-scenario="blockchain-consensus"] {
+  background: linear-gradient(135deg, #ff9500, #ff6b00);
+}
+
+.scenario-tab .scenario-icon {
+  font-size: 14px;
+}
+
+/* Scenario content */
+.scenario-content {
+  padding: 24px;
+  background: linear-gradient(140deg, var(--bg-card), rgba(18, 19, 28, 0.55));
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  backdrop-filter: blur(18px);
+}
+
+.scenario-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.scenario-icon-large {
+  font-size: 32px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+.scenario-title h2 {
+  margin: 0;
+  font-size: 20px;
+  color: var(--text-primary);
+}
+
+.scenario-title .category {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.scenario-description {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.scenario-role {
+  padding: 10px 14px;
+  background: rgba(52, 199, 89, 0.1);
+  border-left: 3px solid var(--primary-green);
+  border-radius: 0 6px 6px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+/* Phase flow diagram canvas */
+.phase-flow-canvas {
+  width: 100%;
+  height: 120px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-color);
+  margin-bottom: 16px;
+}
+
+/* Hardware analysis cards */
+.hardware-analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.hardware-analysis-card {
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.hardware-analysis-card h4 {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.hardware-analysis-card p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+/* Cache topology table */
+.cache-topology-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.cache-topology-table th,
+.cache-topology-table td {
+  padding: 8px 10px;
+  text-align: left;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cache-topology-table th {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.cache-topology-table td {
+  color: var(--text-secondary);
+  font-family: "SF Mono", "Monaco", monospace;
+}
+
+/* ARM Performance table */
+.arm-performance-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-bottom: 16px;
+}
+
+.arm-performance-table th,
+.arm-performance-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.arm-performance-table th {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.arm-performance-table td {
+  color: var(--text-secondary);
+}
+
+.arm-performance-table .metric {
+  font-family: "SF Mono", "Monaco", monospace;
+}
+
+/* Code example in barrier page */
+.barrier-code-block {
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 10px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  font-family: "SF Mono", "Monaco", "Inconsolata", "Fira Code", monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #a8b2c3;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 16px;
+}
+
+/* Real software tags */
+.real-software {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.real-software-tag {
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  background: rgba(42, 113, 255, 0.15);
+  color: var(--primary-blue);
+  border: 1px solid rgba(42, 113, 255, 0.3);
+}
+
+/* Comparison table for barrier scenarios */
+.comparison-table-section {
+  margin-bottom: 24px;
+}
+
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  background: linear-gradient(140deg, var(--bg-card), rgba(18, 19, 28, 0.55));
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.comparison-table th,
+.comparison-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.comparison-table thead th {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.6px;
+}
+
+.comparison-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.comparison-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.comparison-table .scenario-name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.comparison-table .metric {
+  font-family: "SF Mono", "Monaco", monospace;
+}
+
+.comparison-table .categorical {
+  text-align: center;
+}
+
+/* Topology explorer */
+.topology-explorer {
+  padding: 20px;
+  background: linear-gradient(140deg, var(--bg-card), rgba(18, 19, 28, 0.55));
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  backdrop-filter: blur(18px);
+}
+
+.topology-explorer h3 {
+  margin: 0 0 12px 0;
+  font-size: 15px;
+  color: var(--text-primary);
+}
+
+.topology-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.topology-select {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.topology-animation-canvas {
+  width: 100%;
+  height: 180px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-color);
+}
+
+/* Responsive for barrier page */
+@media (max-width: 768px) {
+  .barrier-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .hardware-analysis-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .scenario-tabs {
+    flex-direction: column;
+  }
+
+  .comparison-table {
+    font-size: 10px;
+  }
+
+  .comparison-table th,
+  .comparison-table td {
+    padding: 6px 8px;
+  }
+}
+
+/* ========================================
+   Detail Page Hardware Tendency Styles
+   ======================================== */
+
+.hardware-tendency-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ht-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.ht-description {
+  flex: 1;
+  min-width: 200px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* Large tendency spectrum for detail page */
+.tendency-spectrum-large {
+  margin: 16px 0;
+}
+
+.tendency-spectrum-bar {
+  position: relative;
+  height: 20px;
+  background: linear-gradient(90deg,
+    var(--primary-cyan) 0%,
+    var(--primary-purple) 50%,
+    var(--primary-orange) 100%
+  );
+  border-radius: 10px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.tendency-spectrum-bar .tendency-marker {
+  width: 20px;
+  height: 20px;
+  border-width: 3px;
+  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.tendency-labels-large {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+.tendency-labels-large .tendency-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* ARM details grid */
+.ht-arm-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  border-left: 3px solid var(--primary-cyan);
+}
+
+.ht-detail-item h4 {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ht-detail-item p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* Performance impact table */
+.ht-performance-table {
+  margin-top: 8px;
+}
+
+.ht-performance-table h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.ht-performance-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.ht-performance-table thead {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.ht-performance-table th {
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.ht-performance-table td {
+  padding: 10px 12px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.ht-performance-table tr:last-child td {
+  border-bottom: none;
+}
+
+.ht-performance-table td:nth-child(2) {
+  font-family: "SF Mono", "Monaco", monospace;
+  color: var(--primary-cyan);
+}
+
+/* Topology diagram section */
+.ht-topology-section {
+  margin-top: 8px;
+}
+
+.ht-topology-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.topology-canvas-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  margin-bottom: 12px;
+}
+
+.topology-canvas-wrapper canvas {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+
+.topology-toggle {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.topology-btn {
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.topology-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.topology-btn.active {
+  background: var(--primary-blue);
+  border-color: var(--primary-blue);
+  color: white;
+}
+
+/* Barrier CTA card */
+.barrier-cta-card {
+  margin-top: 16px;
+  padding: 20px;
+  background: linear-gradient(140deg, rgba(42, 113, 255, 0.15), rgba(0, 209, 255, 0.1));
+  border-radius: 12px;
+  border: 1px solid rgba(42, 113, 255, 0.3);
+}
+
+.barrier-cta-card h4 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  color: var(--primary-blue);
+}
+
+.barrier-cta-card p {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.cta-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--primary-blue);
+  color: white;
+  text-decoration: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.cta-button:hover {
+  background: var(--primary-blue-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(42, 113, 255, 0.3);
+}
+
+.btn-icon {
+  font-size: 16px;
+  transition: transform 0.2s ease;
+}
+
+.cta-button:hover .btn-icon {
+  transform: translateX(4px);
+}
+
+/* Responsive for detail page hardware tendency */
+@media (max-width: 768px) {
+  .ht-header {
+    flex-direction: column;
+  }
+
+  .ht-arm-details {
+    grid-template-columns: 1fr;
+  }
+
+  .ht-performance-table {
+    font-size: 11px;
+  }
+
+  .ht-performance-table th,
+  .ht-performance-table td {
+    padding: 8px;
+  }
+
+  .topology-toggle {
+    flex-direction: column;
+  }
+
+  .topology-btn {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+/* ========== Concurrency Analysis Section ========== */
+
+.concurrency-analysis-section {
+  margin-top: 24px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+}
+
+.concurrency-analysis-section h4 {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Deployment Scales Grid */
+.deployment-scales-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.scale-card {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.scale-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.scale-icon {
+  font-size: 16px;
+}
+
+.scale-card h5 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.scale-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.core-count {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--primary-cyan);
+}
+
+.scale-desc {
+  margin: 0;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.barrier-behavior p {
+  margin: 4px 0 0 0;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.4;
+}
+
+.behavior-tag {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.scale-card.small .behavior-tag {
+  background: rgba(52, 199, 89, 0.2);
+  color: #34c759;
+}
+
+.scale-card.medium .behavior-tag {
+  background: rgba(255, 149, 0, 0.2);
+  color: #ff9500;
+}
+
+.scale-card.large .behavior-tag {
+  background: rgba(255, 59, 48, 0.2);
+  color: #ff3b30;
+}
+
+/* Performance by Cores Section */
+.performance-by-cores-section {
+  margin-top: 16px;
+}
+
+.performance-by-cores-section h5 {
+  margin: 0 0 12px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.cores-perf-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.cores-perf-table th,
+.cores-perf-table td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cores-perf-table th {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
+
+.cores-perf-table td {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.cores-perf-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Responsive for concurrency analysis */
+@media (max-width: 768px) {
+  .deployment-scales-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cores-perf-table {
+    font-size: 10px;
+  }
+
+  .cores-perf-table th,
+  .cores-perf-table td {
+    padding: 6px 8px;
+  }
+}

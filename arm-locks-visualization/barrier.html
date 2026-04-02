@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pthread Barrier 深度分析 - ARM Lock Mechanisms</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="barrier-page-header">
+      <div>
+        <a href="index.html" class="back-button" style="display: inline-flex; margin-bottom: 16px;">
+          <span class="back-icon">←</span>
+          <span>返回主页</span>
+        </a>
+        <h1>pthread_barrier 深度分析</h1>
+        <p class="header-subtitle">线程屏障的 7 大真实应用场景与硬件原子倾向影响</p>
+      </div>
+      <div class="barrier-tags">
+        <span class="barrier-tag">pthread_barrier_wait</span>
+        <span class="barrier-tag">MPI_Barrier</span>
+        <span class="barrier-tag">NUMA</span>
+      </div>
+    </header>
+
+    <!-- Section 1: Barrier Overview -->
+    <section class="detail-section">
+      <h2 class="section-title">
+        <span class="section-icon">📖</span>
+        Barrier 机制概述
+      </h2>
+      <div class="section-content">
+        <div class="barrier-overview">
+          <div class="barrier-what">
+            <h3>什么是 Barrier（屏障）？</h3>
+            <p>屏障是一种同步原语，用于确保多个线程在继续执行之前都到达某个同步点。只有当所有参与线程都调用了 <code>pthread_barrier_wait()</code> 后，所有线程才会同时被释放继续执行。</p>
+            <div class="code-block">
+              <pre><code>// pthread_barrier 基本用法
+pthread_barrier_t barrier;
+pthread_barrier_init(&barrier, NULL, num_threads);
+
+// 在每个线程中
+do_work();
+pthread_barrier_wait(&barrier);  // 等待其他线程
+do_more_work();</code></pre>
+            </div>
+          </div>
+
+          <div class="barrier-atomic-impact">
+            <h3>硬件原子倾向的特殊影响</h3>
+            <p>Barrier 操作具有 <strong>全对全 (all-to-all)</strong> 的同步特性，使其对硬件原子操作模式极其敏感：</p>
+            <ul>
+              <li><strong style="color: #00d1ff;">Near-Atomic (近端)</strong>: 在本核 L1 缓存命中时执行，本地完成 (~3-5 cycles)</li>
+              <li><strong style="color: #ff9500;">Far-Atomic (远端)</strong>: 在本核 cache 未命中，需要 CHI 互连到 Home Node (~20-100+ cycles)</li>
+              <li><strong>关键因素</strong>: Cache 行状态（Unique vs Shared）决定了是 near 还是 far</li>
+              <li><strong>Barrier 的本质</strong>: 最后到达的线程触发全局计数器更新，通常为 far-atomic</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- ARM Barrier Implementation -->
+        <div class="arm-impl-section">
+          <h4>ARM 上的 Barrier 实现</h4>
+          <p>pthread_barrier 在 ARM 系统上使用原子递增和条件变量实现：</p>
+          <div class="code-block">
+            <pre><code>barrier_wait:
+    ldaddal x2, x3, [x1]    // 原子递增计数器 (Far-Atomic)
+    // 最后一个线程负责唤醒其他线程
+    cmp x3, x4              // 检查是否是最后一个线程
+    b.ne wait_loop
+    // 唤醒所有等待者
+    wake_all:
+    sev                     // 发送事件
+    ret</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 2: Scenario Selector -->
+    <section class="detail-section">
+      <h2 class="section-title">
+        <span class="section-icon">🔬</span>
+        7 大真实应用场景分析
+      </h2>
+      <div class="section-content">
+        <div class="scenario-tabs" id="scenario-tabs">
+          <!-- Tabs will be populated by JS -->
+        </div>
+
+        <!-- Active Scenario Content -->
+        <div id="scenario-content" class="scenario-content">
+          <!-- Will be populated by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 3: Cross-Scenario Comparison -->
+    <section class="detail-section">
+      <h2 class="section-title">
+        <span class="section-icon">📊</span>
+        跨场景性能对比
+      </h2>
+      <div class="section-content">
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th>应用场景</th>
+              <th>Barrier 频率</th>
+              <th>最优原子模式</th>
+              <th>同集群延迟</th>
+              <th>跨集群延迟</th>
+              <th>跨 NUMA 延迟</th>
+            </tr>
+          </thead>
+          <tbody id="comparison-tbody">
+            <!-- Will be populated by JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Section 4: Topology Explorer -->
+    <section class="detail-section">
+      <h2 class="section-title">
+        <span class="section-icon">🗺️</span>
+        缓存拓扑探索器
+      </h2>
+      <div class="section-content">
+        <div class="topology-explorer">
+          <div class="topology-controls-row">
+            <label for="topology-select">选择拓扑配置：</label>
+            <select id="topology-select" class="topology-select">
+              <option value="same-cluster">同一 CPU 集群</option>
+              <option value="cross-cluster">跨集群 (同一 Socket)</option>
+              <option value="cross-numa">跨 NUMA 节点</option>
+            </select>
+            <button class="category-btn" onclick="BarrierPage.runTopologyAnimation()">
+              ▶ 运行动画
+            </button>
+          </div>
+          <div class="topology-info" id="topology-info">
+            <p>选择拓扑配置并运行动画，查看 Barrier 同步在不同缓存拓扑下的传播路径。</p>
+          </div>
+          <canvas id="topology-animation-canvas" class="topology-animation-canvas"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer style="text-align: center; padding: 32px 0; color: var(--text-muted); font-size: 12px;">
+      <p>ARM Lock Mechanisms Visualization - pthread_barrier Deep Analysis</p>
+      <p style="margin-top: 8px;">
+        相关关键字: pthread_barrier_wait | MPI_Barrier | Spark Barrier | Vulkan Pipeline Barrier
+      </p>
+    </footer>
+  </div>
+
+  <!-- Scripts -->
+  <script src="data.js"></script>
+  <script src="barrier.js"></script>
+</body>
+</html>
