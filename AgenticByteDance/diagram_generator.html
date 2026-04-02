@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agentic AI CPU 设计空间示意图生成器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', -apple-system, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #C8102E;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+
+        .diagram-section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .diagram-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #C8102E;
+        }
+
+        .diagram-title {
+            font-size: 22px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .diagram-badge {
+            background: #C8102E;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .diagram-canvas {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #fafafa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        canvas {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+
+        .design-points {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .point-card {
+            background: linear-gradient(135deg, #fff 0%, #f8f8f8 100%);
+            border: 1px solid #e0e0e0;
+            border-left: 4px solid #C8102E;
+            border-radius: 8px;
+            padding: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .point-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(200, 16, 46, 0.2);
+        }
+
+        .point-icon {
+            font-size: 20px;
+            margin-bottom: 8px;
+        }
+
+        .point-title {
+            font-weight: bold;
+            color: #C8102E;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .point-desc {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+        }
+
+        .btn-download {
+            background: #C8102E;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn-download:hover {
+            background: #8B0000;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .btn-all {
+            background: #333;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .btn-all:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Agentic AI CPU 设计空间示意图生成器</h1>
+
+        <div class="controls">
+            <button class="btn-all" onclick="downloadAll()">📥 下载所有示意图</button>
+        </div>
+
+        <!-- 第1页：系统维度 -->
+        <div class="diagram-section" id="section-system">
+            <div class="diagram-header">
+                <span class="diagram-title">系统维度设计空间</span>
+                <span class="diagram-badge">Level 1</span>
+            </div>
+            <div class="diagram-canvas">
+                <canvas id="systemCanvas" width="900" height="500"></canvas>
+            </div>
+            <div class="design-points">
+                <div class="point-card">
+                    <div class="point-icon">⚖️</div>
+                    <div class="point-title">CPU-GPU配比模式</div>
+                    <div class="point-desc">训练优化(1:2)、均衡型(1:1)、GPU为主(1:4)、独立CPU机柜</div>
+                </div>
+                <div class="point-card">
+                    <div class="point-icon">🗄️</div>
+                    <div class="point-title">机架功率密度</div>
+                    <div class="point-desc">标准(20kW)、高密度(36kW风冷)、液冷(60kW+)</div>
+                </div>
+                <div class="point-card">
+                    <div class="point-icon">🏗️</div>
+                    <div class="point-title">分层系统架构</div>
+                    <div class="point-desc">分离三层、统一调度、混合模式、独立CPU机柜</div>
+                </div>
+                <div class="point-card">
+                    <div class="point-icon">🔗</div>
+                    <div class="point-title">节点间互联拓扑</div>
+                    <div class="point-desc">NVLink-C2C(1.8TB/s)、InfiniBand、RoCEv2</div>
+                </div>
+                <div class="point-card">
+                    <div class="point-icon">💾</div>
+                    <div class="point-title">系统级内存架构</div>
+                    <div class="point-desc">本地内存、CXL 3.0池化、分解式内存</div>
+                </div>
+                <div class="point-card">
+                    <div class="point-icon">🏭</div>
+                    <div class="point-title">部署模式</div>
+                    <div class="point-desc">传统数据中心、AI工厂、边缘部署</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第2页：SoC维度 -->
+        <div class="diagram-section" id="section-soc">
+            <div class="diagram-header">
+                <span class="diagram-title">SoC维度设计空间</span>
+                <span class="diagram-badge">Level 2</span>
+            </div>
+            <div class="diagram-canvas">
+                <canvas id="socCanvas" width="900" height="500"></canvas>
+            </div>
+            <div class="design-points">
+                <div class="point-card">
+                    <div class="point-icon">🔬</div>
+                    <div class="point-title">核心架构选择</div>
+                    <div class="point-desc">公版核心(Arm Neoverse)、自研核心(NVIDIA Olympus)、混合架构</div>
+                </div>
+                <div class="point-card">
+                    <div class="point-icon">📚</div>
+                    <div class="point-title">缓存层次结构</div>
+                    <div class="point-desc">能效优先(小L2)、大缓存配置(162MB L3)、自适应缓存</div>
+                </div>
+                <div class="point-card">
+                    <div class="point-icon">🔌</div>
+                    <div class="point-title">Die架构策略</div>
+                    <div class="point-desc">单片Monolithic(零NUMA)、Chiplet(灵活扩展)、混合架构</div>
+                </div>
+                <div class="point-card">
+                    <div class="point-icon">💾</div>
+                    <div class="point-title">内存子系统</div>
+                    <div class="point-desc">DDR5 DIMM、SOCAMM(1.5TB可更换)、HBM高带宽</div>
+                </div>
+                <div class="point-card">
+                    <div class="point-icon">🚪</div>
+                    <div class="point-title">I/O配置</div>
+                    <div class="point-desc">标准配置、高密度I/O(96条PCIe Gen6)、定制I/O</div>
+                </div>
+                <div class="point-card">
+                    <div class="point-icon">🏭</div>
+                    <div class="point-title">工艺节点</div>
+                    <div class="point-desc">5nm成熟工艺、3nm领先工艺、2nm前沿工艺</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第3页：CPU维度 -->
+        <div class="diagram-section" id="section-cpu">
+            <div class="diagram-header">
+                <span class="diagram-title">CPU维度设计空间</span>
+                <span class="diagram-badge">Level 3</span>
+            </div>
+            <div class="diagram-canvas">
+                <canvas id="cpuCanvas" width="900" height="500"></canvas>
+            </div>
+            <div class="design-points">
+                <div class="point-card">
+                    <div class="point-icon">🧵</div>
+                    <div class="point-title">多线程策略</div>
+                    <div class="point-desc">无SMT、传统SMT(时间切片)、空间多线程(物理隔离)</div>
+                </div>
+                <div class="point-card">
+                    <div class="point-icon">📝</div>
+                    <div class="point-title">AI指令集扩展</div>
+                    <div class="point-desc">BF16/INT8、FP8原生支持、定制扩展指令</div>
+                </div>
+                <div class="point-card">
+                    <div class="point-icon">🔮</div>
+                    <div class="point-title">分支预测器</div>
+                    <div class="point-desc">静态预测、动态预测(传统)、神经预测器(ML)</div>
+                </div>
+                <div class="point-card">
+                    <div class="point-icon">📏</div>
+                    <div class="point-title">指令前端宽度</div>
+                    <div class="point-desc">6-wide(能效)、8-wide(均衡)、10-wide(高性能)</div>
+                </div>
+                <div class="point-card">
+                    <div class="point-icon">🚀</div>
+                    <div class="point-title">片上专用加速器</div>
+                    <div class="point-desc">RDMA引擎、加密引擎、压缩引擎、全加速套件</div>
+                </div>
+                <div class="point-card">
+                    <div class="point-icon">⚡</div>
+                    <div class="point-title">频率与功耗策略</div>
+                    <div class="point-desc">能效优先、平衡策略、激进boost(延迟敏感)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第4页：软硬件协同维度 -->
+        <div class="diagram-section" id="section-sw">
+            <div class="diagram-header">
+                <span class="diagram-title">软硬件协同设计空间</span>
+                <span class="diagram-badge">Level 4</span>
+            </div>
+            <div class="diagram-canvas">
+                <canvas id="swCanvas" width="900" height="500"></canvas>
+            </div>
+            <div class="design-points">
+                <div class="point-card">
+                    <div class="point-icon">🔍</div>
+                    <div class="point-title">CPU端瓶颈优化</div>
+                    <div class="point-desc">基础优化、激进优化(73%收益)、软硬协同</div>
+                </div>
+                <div class="point-card">
+                    <div class="point-icon">🗺️</div>
+                    <div class="point-title">NUMA感知调度</div>
+                    <div class="point-desc">手动绑定(bindpcie)、自动调度、混合模式</div>
+                </div>
+                <div class="point-card">
+                    <div class="point-icon">🔧</div>
+                    <div class="point-title">软件栈优化</div>
+                    <div class="point-desc">驱动层优化、框架层优化、全栈优化(Python→JIT)</div>
+                </div>
+                <div class="point-card">
+                    <div class="point-icon">🌐</div>
+                    <div class="point-title">生态兼容性策略</div>
+                    <div class="point-desc">ARM原生、混合部署、二进制翻译</div>
+                </div>
+                <div class="point-card">
+                    <div class="point-icon">📊</div>
+                    <div class="point-title">性能可观测性</div>
+                    <div class="point-desc">分离工具、统一视图(CPU-GPU对齐)、AI分析</div>
+                </div>
+                <div class="point-card">
+                    <div class="point-icon">🎛️</div>
+                    <div class="point-title">运行时动态调优</div>
+                    <div class="point-desc">静态配置、动态调优(SMT/频率)、预测性调优</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 颜色配置 - 华为红色系
+        const HUAWEI_RED = '#C8102E';
+        const HUAWEI_DARK_RED = '#8B0000';
+        const HUAWEI_LIGHT_RED = '#E85D75';
+        const GOLD = '#F5A623';
+        const GRAY = '#666666';
+        const LIGHT_GRAY = '#E0E0E0';
+
+        // 绘制圆角矩形
+        function roundRect(ctx, x, y, width, height, radius, fill, stroke) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+            if (fill) {
+                ctx.fillStyle = fill;
+                ctx.fill();
+            }
+            if (stroke) {
+                ctx.strokeStyle = stroke;
+                ctx.stroke();
+            }
+        }
+
+        // 绘制箭头
+        function drawArrow(ctx, fromX, fromY, toX, toY, color) {
+            const headlen = 10;
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+        }
+
+        // 绘制系统维度示意图
+        function drawSystemDiagram() {
+            const canvas = document.getElementById('systemCanvas');
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+
+            // 背景
+            ctx.fillStyle = '#fafafa';
+            ctx.fillRect(0, 0, w, h);
+
+            // 标题
+            ctx.fillStyle = HUAWEI_RED;
+            ctx.font = 'bold 24px Microsoft YaHei';
+            ctx.textAlign = 'center';
+            ctx.fillText('系统维度架构 - AI工厂视图', w / 2, 35);
+
+            // 绘制三层架构
+            const layers = [
+                { name: '前端调度层', y: 80, icon: '🌐', desc: '请求路由/负载均衡\n~10k QPS', color: '#E3F2FD' },
+                { name: '中端推理层', y: 180, icon: '🧠', desc: 'Agent决策/模型推理\nGPU+CPU协同', color: '#FFF3E0' },
+                { name: '后端训练层', y: 280, icon: '💪', desc: '模型微调/RLHF\n高带宽互联', color: '#E8F5E9' }
+            ];
+
+            layers.forEach((layer, i) => {
+                // 绘制层级框
+                const boxW = 250;
+                const boxH = 80;
+                const boxX = (w - boxW) / 2;
+
+                roundRect(ctx, boxX, layer.y, boxW, boxH, 10, layer.color, HUAWEI_RED);
+
+                // 图标和标题
+                ctx.fillStyle = HUAWEI_RED;
+                ctx.font = 'bold 16px Microsoft YaHei';
+                ctx.textAlign = 'left';
+                ctx.fillText(`${layer.icon} ${layer.name}`, boxX + 15, layer.y + 25);
+
+                // 描述
+                ctx.fillStyle = GRAY;
+                ctx.font = '12px Microsoft YaHei';
+                const lines = layer.desc.split('\n');
+                lines.forEach((line, j) => {
+                    ctx.fillText(line, boxX + 15, layer.y + 45 + j * 18);
+                });
+
+                // 箭头
+                if (i < layers.length - 1) {
+                    drawArrow(ctx, w / 2, layer.y + boxH, w / 2, layers[i + 1].y, HUAWEI_RED);
+                }
+            });
+
+            // 侧边设计空间点
+            const leftPoints = [
+                { icon: '⚖️', title: 'CPU:GPU', desc: '1:2 训练优化' },
+                { icon: '🗄️', title: '功率密度', desc: '36kW 风冷' },
+                { icon: '🔗', title: '互联', desc: 'NVLink-C2C' }
+            ];
+
+            const rightPoints = [
+                { icon: '💾', title: '内存', desc: 'CXL 3.0池化' },
+                { icon: '🏭', title: '部署', desc: 'AI工厂' },
+                { icon: '🏗️', title: '架构', desc: '统一调度' }
+            ];
+
+            leftPoints.forEach((point, i) => {
+                const y = 100 + i * 100;
+                roundRect(ctx, 30, y, 140, 70, 8, '#FFF', LIGHT_GRAY);
+                ctx.fillStyle = HUAWEI_RED;
+                ctx.font = '24px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(point.icon, 100, y + 28);
+                ctx.fillStyle = HUAWEI_DARK_RED;
+                ctx.font = 'bold 12px Microsoft YaHei';
+                ctx.fillText(point.title, 100, y + 48);
+                ctx.fillStyle = GRAY;
+                ctx.font = '11px Microsoft YaHei';
+                ctx.fillText(point.desc, 100, y + 62);
+            });
+
+            rightPoints.forEach((point, i) => {
+                const y = 100 + i * 100;
+                roundRect(ctx, w - 170, y, 140, 70, 8, '#FFF', LIGHT_GRAY);
+                ctx.fillStyle = HUAWEI_RED;
+                ctx.font = '24px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(point.icon, w - 100, y + 28);
+                ctx.fillStyle = HUAWEI_DARK_RED;
+                ctx.font = 'bold 12px Microsoft YaHei';
+                ctx.fillText(point.title, w - 100, y + 48);
+                ctx.fillStyle = GRAY;
+                ctx.font = '11px Microsoft YaHei';
+                ctx.fillText(point.desc, w - 100, y + 62);
+            });
+
+            // 底部连接
+            ctx.setLineDash([5, 5]);
+            for (let i = 0; i < 3; i++) {
+                drawArrow(ctx, 170, 135 + i * 100, (w - 250) / 2, 120 + i * 80, '#999');
+                drawArrow(ctx, (w + 250) / 2, 120 + i * 80, w - 170, 135 + i * 100, '#999');
+            }
+            ctx.setLineDash([]);
+        }
+
+        // 绘制SoC维度示意图
+        function drawSoCDiagram() {
+            const canvas = document.getElementById('socCanvas');
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+
+            ctx.fillStyle = '#fafafa';
+            ctx.fillRect(0, 0, w, h);
+
+            ctx.fillStyle = HUAWEI_RED;
+            ctx.font = 'bold 24px Microsoft YaHei';
+            ctx.textAlign = 'center';
+            ctx.fillText('SoC维度架构 - 芯片级设计空间', w / 2, 35);
+
+            // 中心Die图
+            const dieX = (w - 400) / 2;
+            const dieY = 80;
+            const dieW = 400;
+            const dieH = 280;
+
+            // Die外框
+            roundRect(ctx, dieX, dieY, dieW, dieH, 15, '#FFF8E1', HUAWEI_RED);
+            ctx.strokeStyle = HUAWEI_RED;
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Die标题
+            ctx.fillStyle = HUAWEI_RED;
+            ctx.font = 'bold 18px Microsoft YaHei';
+            ctx.textAlign = 'center';
+            ctx.fillText('🔲 单片Die架构 (Monolithic)', w / 2, dieY + 30);
+
+            // 内部组件网格
+            const components = [
+                { x: dieX + 20, y: dieY + 50, w: 180, h: 90, icon: '🔬', title: '自研Olympus核心', desc: '88核 × 10-wide\nIPC +1.5x' },
+                { x: dieX + 200, y: dieY + 50, w: 180, h: 90, icon: '📚', title: '缓存层次', desc: 'L3: 162MB\nL2: 每核独占' },
+                { x: dieX + 20, y: dieY + 150, w: 180, h: 90, icon: '💾', title: 'SOCAMM', desc: '1.5TB可更换\n1.2TB/s带宽' },
+                { x: dieX + 200, y: dieY + 150, w: 180, h: 90, icon: '🚪', title: 'I/O子系统', desc: 'PCIe Gen6\nNVLink-C2C' },
+                { x: dieX + 110, y: dieY + 250, w: 180, h: 20, icon: '🔌', title: 'SCF互联 3.4TB/s', desc: '' }
+            ];
+
+            components.forEach(comp => {
+                roundRect(ctx, comp.x, comp.y, comp.w, comp.h, 8, '#FFF', LIGHT_GRAY);
+                ctx.fillStyle = HUAWEI_RED;
+                ctx.font = '20px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(comp.icon, comp.x + comp.w / 2, comp.y + 25);
+                ctx.fillStyle = HUAWEI_DARK_RED;
+                ctx.font = 'bold 13px Microsoft YaHei';
+                ctx.fillText(comp.title, comp.x + comp.w / 2, comp.y + 45);
+                ctx.fillStyle = GRAY;
+                ctx.font = '11px Microsoft YaHei';
+                const lines = comp.desc.split('\n');
+                lines.forEach((line, j) => {
+                    ctx.fillText(line, comp.x + comp.w / 2, comp.y + 60 + j * 16);
+                });
+            });
+
+            // 设计空间标注
+            const annotations = [
+                { x: 50, y: 380, icon: '🏭', title: '工艺: 3nm TSMC', items: ['密度 +1.7x', '性能 +1.15x'] },
+                { x: 280, y: 380, icon: '🔌', title: 'vs Chiplet设计', items: ['零NUMA边界', '<100ns延迟'] },
+                { x: 550, y: 380, icon: '⚖️', title: '设计权衡', items: ['单片: 性能优先', 'Chiplet: 成本优势'] }
+            ];
+
+            annotations.forEach(anno => {
+                roundRect(ctx, anno.x, anno.y, 200, 80, 8, '#FFF8DC', GOLD);
+                ctx.fillStyle = HUAWEI_RED;
+                ctx.font = '20px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(anno.icon, anno.x + 100, anno.y + 25);
+                ctx.fillStyle = HUAWEI_DARK_RED;
+                ctx.font = 'bold 13px Microsoft YaHei';
+                ctx.fillText(anno.title, anno.x + 100, anno.y + 45);
+                ctx.fillStyle = GRAY;
+                ctx.font = '11px Microsoft YaHei';
+                ctx.fillText(anno.items[0], anno.x + 100, anno.y + 62);
+                ctx.fillText(anno.items[1], anno.x + 100, anno.y + 76);
+            });
+        }
+
+        // 绘制CPU维度示意图
+        function drawCPUDiagram() {
+            const canvas = document.getElementById('cpuCanvas');
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+
+            ctx.fillStyle = '#fafafa';
+            ctx.fillRect(0, 0, w, h);
+
+            ctx.fillStyle = HUAWEI_RED;
+            ctx.font = 'bold 24px Microsoft YaHei';
+            ctx.textAlign = 'center';
+            ctx.fillText('CPU维度架构 - 核心微架构设计空间', w / 2, 35);
+
+            // CPU核心流水线图
+            const pipelineX = 50;
+            const pipelineY = 80;
+            const stageW = 110;
+            const stageH = 60;
+
+            const stages = [
+                { name: '取指', icon: '📖', desc: '10-wide\n前端' },
+                { name: '译码', icon: '🔤', desc: '宽译码\n单元' },
+                { name: '预测', icon: '🔮', desc: '神经\n预测器' },
+                { name: '发射', icon: '🚀', desc: '乱序\n发射' },
+                { name: '执行', icon: '⚡', desc: '多执行\n端口' },
+                { name: '回退', icon: '✅', desc: '精确\n异常' }
+            ];
+
+            stages.forEach((stage, i) => {
+                const x = pipelineX + i * (stageW + 10);
+                roundRect(ctx, x, pipelineY, stageW, stageH, 8, '#E3F2FD', HUAWEI_RED);
+                ctx.fillStyle = HUAWEI_RED;
+                ctx.font = '18px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(stage.icon, x + stageW / 2, pipelineY + 22);
+                ctx.fillStyle = HUAWEI_DARK_RED;
+                ctx.font = 'bold 12px Microsoft YaHei';
+                ctx.fillText(stage.name, x + stageW / 2, pipelineY + 40);
+                ctx.fillStyle = GRAY;
+                ctx.font = '10px Microsoft YaHei';
+                const lines = stage.desc.split('\n');
+                lines.forEach((line, j) => {
+                    ctx.fillText(line, x + stageW / 2, pipelineY + 52 + j * 12);
+                });
+
+                if (i < stages.length - 1) {
+                    drawArrow(ctx, x + stageW, pipelineY + stageH / 2, x + stageW + 10, pipelineY + stageH / 2, HUAWEI_RED);
+                }
+            });
+
+            // 多线程对比
+            const smtY = 180;
+            roundRect(ctx, 50, smtY, 380, 120, 10, '#FFEBEE', '#FFCDD2');
+            ctx.fillStyle = HUAWEI_RED;
+            ctx.font = 'bold 16px Microsoft YaHei';
+            ctx.textAlign = 'center';
+            ctx.fillText('⏱️ 传统SMT (时间切片)', 240, smtY + 25);
+            ctx.fillStyle = GRAY;
+            ctx.font = '12px Microsoft YaHei';
+            ctx.fillText('共享资源 | 性能抖动 | 竞争流水线', 240, smtY + 50);
+            ctx.fillText('█▌▍▎▏▏░░▓▓░░▌  → 线程时间分片', 240, smtY + 75);
+            ctx.fillStyle = HUAWEI_DARK_RED;
+            ctx.font = '11px Microsoft YaHei';
+            ctx.fillText('问题: 尾延迟不可预测', 240, smtY + 100);
+
+            roundRect(ctx, 470, smtY, 380, 120, 10, '#E8F5E9', '#C8E6C9');
+            ctx.fillStyle = '#2E7D32';
+            ctx.font = 'bold 16px Microsoft YaHei';
+            ctx.textAlign = 'center';
+            ctx.fillText('🏗️ 空间多线程 (物理隔离)', 660, smtY + 25);
+            ctx.fillStyle = '#1B5E20';
+            ctx.font = '12px Microsoft YaHei';
+            ctx.fillText('独立资源 | 可预测延迟 | 专用流水线', 660, smtY + 50);
+            ctx.fillText('████▓▓▓▓  │  ░░░░░░  → 物理分区', 660, smtY + 75);
+            ctx.fillStyle = '#2E7D32';
+            ctx.font = 'bold 11px Microsoft YaHei';
+            ctx.fillText('✓ 适合: 多租户AI工厂', 660, smtY + 100);
+
+            // 专用加速器
+            const accelY = 330;
+            ctx.fillStyle = HUAWEI_RED;
+            ctx.font = 'bold 16px Microsoft YaHei';
+            ctx.textAlign = 'center';
+            ctx.fillText('片上专用加速器', w / 2, accelY);
+
+            const accelerators = [
+                { icon: '📡', name: 'RDMA引擎', desc: '绕过NoC' },
+                { icon: '🔐', name: '加密引擎', desc: '降低开销' },
+                { icon: '📦', name: '压缩引擎', desc: '加速传输' },
+                { icon: '🎯', name: 'FP8单元', desc: '原生支持' }
+            ];
+
+            accelerators.forEach((acc, i) => {
+                const x = 150 + i * 160;
+                roundRect(ctx, x, accelY + 20, 140, 70, 8, '#FFF3E0', GOLD);
+                ctx.fillStyle = HUAWEI_RED;
+                ctx.font = '24px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(acc.icon, x + 70, accelY + 50);
+                ctx.fillStyle = HUAWEI_DARK_RED;
+                ctx.font = 'bold 13px Microsoft YaHei';
+                ctx.fillText(acc.name, x + 70, accelY + 68);
+                ctx.fillStyle = GRAY;
+                ctx.font = '11px Microsoft YaHei';
+                ctx.fillText(acc.desc, x + 70, accelY + 82);
+            });
+
+            // 频率策略
+            roundRect(ctx, 50, 430, 800, 50, 8, '#F5F5F5', LIGHT_GRAY);
+            ctx.fillStyle = HUAWEI_DARK_RED;
+            ctx.font = 'bold 14px Microsoft YaHei';
+            ctx.textAlign = 'left';
+            ctx.fillText('⚡ 频率策略: ', 70, 462);
+            ctx.fillStyle = GRAY;
+            ctx.font = '13px Microsoft YaHei';
+            ctx.fillText('能效优先  │  平衡策略  │  激进boost (kernel launch延迟敏感场景)', 200, 462);
+        }
+
+        // 绘制软硬件协同维度示意图
+        function drawSWDiagram() {
+            const canvas = document.getElementById('swCanvas');
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+
+            ctx.fillStyle = '#fafafa';
+            ctx.fillRect(0, 0, w, h);
+
+            ctx.fillStyle = HUAWEI_RED;
+            ctx.font = 'bold 24px Microsoft YaHei';
+            ctx.textAlign = 'center';
+            ctx.fillText('软硬件协同优化 - 端到端优化流程', w / 2, 35);
+
+            // 优化流程图
+            const flowSteps = [
+                { x: 80, name: '识别瓶颈', icon: '📈', desc: '性能剖析\n热点定位\n关联分析', color: '#E3F2FD' },
+                { x: 260, name: '优化调度', icon: '🎯', desc: 'NUMA绑定\n进程亲和\n资源隔离', color: '#FFF3E0' },
+                { x: 440, name: '软件优化', icon: '🔧', desc: 'Python→JIT\n优化dispatch\nKernel批处理', color: '#E8F5E9' },
+                { x: 620, name: '动态调优', icon: '🎛️', desc: '运行时\nSMT切换\n频率boost', color: '#F3E5F5' },
+                { x: 740, name: '持续监控', icon: '📊', desc: '统一视图\nCPU-GPU\n事件对齐', color: '#E0F2F1' }
+            ];
+
+            const boxW = 120;
+            const boxH = 90;
+            const boxY = 70;
+
+            flowSteps.forEach((step, i) => {
+                roundRect(ctx, step.x - boxW / 2, boxY, boxW, boxH, 10, step.color, HUAWEI_RED);
+                ctx.fillStyle = HUAWEI_RED;
+                ctx.font = '20px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(step.icon, step.x, boxY + 30);
+                ctx.fillStyle = HUAWEI_DARK_RED;
+                ctx.font = 'bold 13px Microsoft YaHei';
+                ctx.fillText(step.name, step.x, boxY + 50);
+                ctx.fillStyle = GRAY;
+                ctx.font = '10px Microsoft YaHei';
+                const lines = step.desc.split('\n');
+                lines.forEach((line, j) => {
+                    ctx.fillText(line, step.x, boxY + 65 + j * 12);
+                });
+
+                if (i < flowSteps.length - 1) {
+                    drawArrow(ctx, step.x + boxW / 2, boxY + boxH / 2, flowSteps[i + 1].x - boxW / 2, boxY + boxH / 2, HUAWEI_RED);
+                }
+            });
+
+            // CPU瓶颈分析
+            const bottleneckY = 200;
+            roundRect(ctx, 50, bottleneckY, 380, 130, 10, '#FFEBEE', '#FFCDD2');
+            ctx.fillStyle = HUAWEI_RED;
+            ctx.font = 'bold 16px Microsoft YaHei';
+            ctx.textAlign = 'center';
+            ctx.fillText('🔍 CPU瓶颈分析 (DeepSeek-V3案例)', 240, bottleneckY + 25);
+            ctx.fillStyle = HUAWEI_DARK_RED;
+            ctx.font = '14px Microsoft YaHei';
+            ctx.fillText('73% 性能提升来自CPU端优化', 240, bottleneckY + 50);
+            ctx.fillStyle = GRAY;
+            ctx.font = '12px Microsoft YaHei';
+            ctx.fillText('▪ Grace kernel launch开销 ≈ 2x x86 Xeon', 240, bottleneckY + 72);
+            ctx.fillText('▪ Blackwell算力+2.5x → CPU瓶颈更明显', 240, bottleneckY + 92);
+            ctx.fillText('▪ 约349 TFLOPS来自消除CPU overhead', 240, bottleneckY + 112);
+
+            // NUMA优化收益
+            roundRect(ctx, 470, bottleneckY, 380, 130, 10, '#E8F5E9', '#C8E6C9');
+            ctx.fillStyle = '#2E7D32';
+            ctx.font = 'bold 16px Microsoft YaHei';
+            ctx.textAlign = 'center';
+            ctx.fillText('🗺️ NUMA优化收益', 660, bottleneckY + 25);
+            ctx.fillStyle = '#1B5E20';
+            ctx.font = 'bold 14px Microsoft YaHei';
+            ctx.fillText('+70.6 TFLOPS 提升', 660, bottleneckY + 50);
+            ctx.fillStyle = '#2E7D32';
+            ctx.font = '12px Microsoft YaHei';
+            ctx.fillText('bindpcie工具效果:', 660, bottleneckY + 72);
+            ctx.fillText('691 → 762 TFLOPS', 660, bottleneckY + 92);
+            ctx.fillText('消除跨C2C延迟 + 频率boost', 660, bottleneckY + 112);
+
+            // 软件栈分层
+            const stackY = 360;
+            ctx.fillStyle = HUAWEI_RED;
+            ctx.font = 'bold 16px Microsoft YaHei';
+            ctx.textAlign = 'center';
+            ctx.fillText('软件栈分层优化', w / 2, stackY);
+
+            const stackLayers = [
+                { name: '应用层', desc: 'Python开销优化', color: '#E3F2FD' },
+                { name: '框架层', desc: 'PyTorch dispatch优化', color: '#FFF3E0' },
+                { name: '驱动层', desc: 'Kernel批处理/流水线', color: '#E8F5E9' },
+                { name: '硬件层', desc: 'FP8/神经预测器', color: '#F3E5F5' }
+            ];
+
+            stackLayers.forEach((layer, i) => {
+                const x = 120 + i * 200;
+                roundRect(ctx, x, stackY + 20, 170, 70, 8, layer.color, LIGHT_GRAY);
+                ctx.fillStyle = HUAWEI_DARK_RED;
+                ctx.font = 'bold 14px Microsoft YaHei';
+                ctx.textAlign = 'center';
+                ctx.fillText(layer.name, x + 85, stackY + 45);
+                ctx.fillStyle = GRAY;
+                ctx.font = '11px Microsoft YaHei';
+                ctx.fillText(layer.desc, x + 85, stackY + 65);
+            });
+
+            // 底部收益叠加
+            roundRect(ctx, 50, 460, 800, 30, 8, '#FFF8E1', GOLD);
+            ctx.fillStyle = HUAWEI_DARK_RED;
+            ctx.font = 'bold 12px Microsoft YaHei';
+            ctx.textAlign = 'center';
+            ctx.fillText('📈 各层优化收益可叠加，但需要端到端性能分析工具验证', w / 2, 480);
+        }
+
+        // 初始化所有图表
+        function init() {
+            drawSystemDiagram();
+            drawSoCDiagram();
+            drawCPUDiagram();
+            drawSWDiagram();
+        }
+
+        // 下载单个图表
+        function downloadCanvas(canvasId, filename) {
+            const canvas = document.getElementById(canvasId);
+            const url = canvas.toDataURL('image/png');
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+        }
+
+        // 下载所有图表
+        function downloadAll() {
+            downloadCanvas('systemCanvas', '01_系统维度设计空间.png');
+            downloadCanvas('socCanvas', '02_SoC维度设计空间.png');
+            downloadCanvas('cpuCanvas', '03_CPU维度设计空间.png');
+            downloadCanvas('swCanvas', '04_软硬件协同设计空间.png');
+        }
+
+        // 页面加载完成后初始化
+        window.onload = init;
+    </script>
+</body>
+</html>
